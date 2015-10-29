@@ -1,6 +1,6 @@
 
 """
-Copyright (C) 2015 Yannik Marchand
+Copyright (C) 2015 Yannik Marchand, Joshua Andrew
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -574,16 +574,17 @@ class MainWindow(QtGui.QMainWindow):
         # no need to compress or anything, it's as-is
         #self.levelList = byml.BYML(data).rootNode
         self.levelList = None
+        # setting this to none right now, there's an ArrayNode bug
         
     # Splatoon stores it's levels in /Pack/Map/____.szs/____.byaml so it's double layered
     # looks like we have to double the decompression and extraction
     # or we can just ask the user to kindly extract them??
     def showLevelDialog(self):
         if self.levelSelect.exec_():
-            # fix for a stupid bug that cuts off _
+            # fix for a stupid bug that cuts off _ -- not as bad as hardcoding the end, though
             exts = ('_Vss', # versus
                    '_Msn', # mission
-                   '_Dul', # Duel...?
+                   '_Dul', # Dogo (2 player)
                    '_Ttr', # Tutorial
                    '_Shr', # Shooting range
                    '_Stf', # Staff roll
@@ -596,10 +597,10 @@ class MainWindow(QtGui.QMainWindow):
                     self.loadLevel(self.levelData.rootNode)
 
     def loadLevel(self,levelData):
-        stime = now()
+        stime = now() # start the timer to count how long it takes to load a level
         self.glWidget.reset()
         self.settings.reset()
-        amount = len(levelData['Objs'])
+        amount = len(levelData['Objs']) # load the Objs subnode
         progress = QtGui.QProgressDialog(self)
         progress.setCancelButton(None)
         progress.setMinimumDuration(0)
@@ -607,8 +608,8 @@ class MainWindow(QtGui.QMainWindow):
         progress.setWindowModality(QtCore.Qt.WindowModal)
         progress.setWindowTitle('Loading...')
         i = 0
-        for obj in levelData['Objs']:
-            progress.setLabelText('Loading object '+str(i+1)+'/'+str(amount))
+        for obj in levelData['Objs']: # load the objects
+            progress.setLabelText('Loading object '+str(i+1)+'/'+str(amount)) # count, etc etc
             progress.setValue(i)
             self.loadObject(obj)
             self.glWidget.updateGL()
@@ -621,6 +622,7 @@ class MainWindow(QtGui.QMainWindow):
         modelName = obj['ModelName'] if obj['ModelName'] else obj['UnitConfigName']
         self.glWidget.addObject(obj,modelName)
 
+    # buttons n shortcuts
     def setupMenu(self):
         self.openAction = QtGui.QAction("Open",self)
         self.openAction.setShortcut("Ctrl+O")
@@ -643,7 +645,7 @@ class MainWindow(QtGui.QMainWindow):
         settingsMenu.addAction(pathAction)
 
     def saveLevel(self):
-        fn = QtGui.QFileDialog.getSaveFileName(self,'Save Level','StageData','Unpacked Levels (*.byml)')
+        fn = QtGui.QFileDialog.getSaveFileName(self,'Save Level','Map','Unpacked Levels (*.byaml)')
         with open(fn,'wb') as f:
             self.levelData.saveChanges()
             f.write(self.levelData.data)
