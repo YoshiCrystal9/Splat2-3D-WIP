@@ -480,7 +480,7 @@ class LevelWidget(QGLWidget):
 class ChooseLevelDialog(QtGui.QDialog):
     def __init__(self,levelList):
         QtGui.QDialog.__init__(self)
-        self.setWindowTitle('Choose Level')
+        self.setWindowTitle('Choose Stage')
         self.currentLevel = None
 
         tree = QtGui.QTreeWidget()
@@ -488,13 +488,13 @@ class ChooseLevelDialog(QtGui.QDialog):
         tree.currentItemChanged.connect(self.handleItemChange)
         tree.itemActivated.connect(self.handleItemActivated)
         
-##        nodes = []
-##        for level in levelList['MapFileName']:
-##            levelNode = QtGui.QTreeWidgetItem()
-##            levelNode.setData(0,QtCore.Qt.UserRole,level['MapFileName'])
-##            levelNode.setText(0,'Stage '+str(level['MapFileName'])+' ('+level['MapFileName']+')')
-##            nodes.append(levelNode)
-##        tree.addTopLevelItems(nodes)
+        nodes = []
+        for level in levelList:
+            levelNode = QtGui.QTreeWidgetItem()
+            levelNode.setData(0,QtCore.Qt.UserRole,level['MapFileName'])
+            levelNode.setText(0,'Stage '+str(level['MapFileName']))
+            nodes.append(levelNode)
+        tree.addTopLevelItems(nodes)
 
         self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
         self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
@@ -515,7 +515,7 @@ class ChooseLevelDialog(QtGui.QDialog):
 
     def openFile(self):
         fn = QtGui.QFileDialog.getOpenFileName(self,'Open Level','Map','Level Archives (*.szs)')
-        self.currentLevel = os.path.basename(str(fn))[:-8]
+        self.currentLevel = os.path.basename(str(fn))[:-4]
         if self.currentLevel:
             self.accept()
 
@@ -583,6 +583,9 @@ class MainWindow(QtGui.QMainWindow):
         if not os.path.exists(folder+'/Pack/Obj'): return 0
         if not os.path.exists(folder+'/Pack/ObjSmall'): return 0
         if not os.path.exists(folder+'/Pack/Enemy'): return 0
+        if not os.path.exists(folder+'/Pack/Static'): return 0
+        if not os.path.exists(folder+'/Pack/Static/Mush'): return 0
+        if not os.path.exists(folder+'/Pack/Static/Map'): return 0         
         return 1
 
     # luckily Splatoon has a MapInfo.byaml to load stuff in....
@@ -591,31 +594,20 @@ class MainWindow(QtGui.QMainWindow):
             data = f.read()
             
         # no need to compress or anything, it's as-is
-        #self.levelList = byml.BYML(data).rootNode
-        self.levelList = None
-        # setting this to none right now, there's an ArrayNode bug
+        self.levelList = byml.BYML(data).rootNode
+        #self.levelList = None
+        # setting this to none right now, there's an ArrayNode bug - well maybe not anymore
         
     # Splatoon stores it's levels in /Pack/Map/____.szs/____.byaml so it's double layered
     # looks like we have to double the decompression and extraction
     # or we can just ask the user to kindly extract them??
     def showLevelDialog(self):
         if self.levelSelect.exec_():
-            # fix for a stupid bug that cuts off _ -- not as bad as hardcoding the end, though
-            exts = ('_Vss', # Versus
-                   '_Msn', # Mission
-                   '_Mch', # Match room
-                   '_Dul', # Dogo (2 player)
-                   '_Plz', # Plaza
-                   '_Ttr', # Tutorial
-                   '_Shr', # Shooting range
-                   '_Stf', # Staff roll
-                   '_Wld') # World
-            for ext in exts:
-                if os.path.isfile(self.gamePath + '/Pack/Static/Map/' + self.levelSelect.currentLevel + ext + '.szs'):
-                    with open(str(self.gamePath+'/Pack/Static/Map/'+self.levelSelect.currentLevel + ext + '.szs'),'rb') as f:
-                        data = f.read()
-                    self.levelData = byml.BYML(sarc.extract(yaz0.decompress(data),self.levelSelect.currentLevel + ext +'.byaml')) # MAKE SURE TO NOT HARDCODE THE FILE END LIKE LAST TIME
-                    self.loadLevel(self.levelData.rootNode)
+            if os.path.isfile(self.gamePath + '/Pack/Static/Map/' + self.levelSelect.currentLevel + '.szs'):
+                with open(str(self.gamePath+'/Pack/Static/Map/'+self.levelSelect.currentLevel + '.szs'),'rb') as f:
+                    data = f.read()
+                self.levelData = byml.BYML(sarc.extract(yaz0.decompress(data),self.levelSelect.currentLevel + '.byaml')) # MAKE SURE TO NOT HARDCODE THE FILE END LIKE LAST TIME
+                self.loadLevel(self.levelData.rootNode)
 
     def loadLevel(self,levelData):
         stime = now() # start the timer to count how long it takes to load a level
