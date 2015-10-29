@@ -70,8 +70,22 @@ def IntEdit(v,cb):
     return edit
 
 def SettingName(oldName):
-    if oldName == 'IsSnowCover':
-        return 'Snow Covered'
+    if oldName == 'PaintDefault':
+        return 'Painted Default?'
+    if oldName == 'FloatParameter0':
+        return 'Floating Parameter 0'
+    if oldName == 'FloatParameter1':
+        return 'Floating Parameter 1'
+    if oldName == 'FloatParameter2':
+        return 'Floating Parameter 2'
+    if oldName == 'FloatParameter3':
+        return 'Floating Parameter 3'
+    if oldName == 'FloatParameter4':
+        return 'Floating Parameter 4'
+    if oldName == 'PaintRatePerBullet':
+        return 'Painting Rate'
+    if oldName == 'IsAbleToBeVsCulled':
+        return 'Is Vs Culled'       
     return oldName
 
 class SettingsWidget(QtGui.QWidget):
@@ -345,6 +359,10 @@ class LevelWidget(QGLWidget):
             with open(window.gamePath+'/Pack/ObjSmall/Model/'+name+'.szs','rb') as f:
                 data = f.read()
                 print('Loading SmallObj '+name+'!')
+        elif os.path.isfile(window.gamePath+'/Pack/Enemy/Model/'+name+'.szs'):
+            with open(window.gamePath+'/Pack/Enemy/Model/'+name+'.szs','rb') as f:
+                data = f.read()
+                print('Loading enemy model '+name+'!')                
         else:
             return self.cubeList
 
@@ -407,35 +425,35 @@ class LevelWidget(QGLWidget):
         self.cubeList = displayList
 
     def drawCube(self):
-        glVertex3f( 0.5, 0.5,-0.5)
-        glVertex3f(-0.5, 0.5,-0.5)
-        glVertex3f(-0.5, 0.5, 0.5)
-        glVertex3f( 0.5, 0.5, 0.5)
+        glVertex3f( 0.3, 0.3,-0.3)
+        glVertex3f(-0.3, 0.3,-0.3)
+        glVertex3f(-0.3, 0.3, 0.3)
+        glVertex3f( 0.3, 0.3, 0.3)
 
-        glVertex3f( 0.5,-0.5, 0.5)
-        glVertex3f(-0.5,-0.5, 0.5)
-        glVertex3f(-0.5,-0.5,-0.5)
-        glVertex3f( 0.5,-0.5,-0.5)
+        glVertex3f( 0.3,-0.3, 0.3)
+        glVertex3f(-0.3,-0.3, 0.3)
+        glVertex3f(-0.3,-0.3,-0.3)
+        glVertex3f( 0.3,-0.3,-0.3)
         
-        glVertex3f( 0.5, 0.5, 0.5)
-        glVertex3f(-0.5, 0.5, 0.5)
-        glVertex3f(-0.5,-0.5, 0.5)
-        glVertex3f( 0.5,-0.5, 0.5)
+        glVertex3f( 0.3, 0.3, 0.3)
+        glVertex3f(-0.3, 0.3, 0.3)
+        glVertex3f(-0.3,-0.3, 0.3)
+        glVertex3f( 0.3,-0.3, 0.3)
 
-        glVertex3f( 0.5,-0.5,-0.5)
-        glVertex3f(-0.5,-0.5,-0.5)
-        glVertex3f(-0.5, 0.5,-0.5)
-        glVertex3f( 0.5, 0.5,-0.5)
+        glVertex3f( 0.3,-0.3,-0.3)
+        glVertex3f(-0.3,-0.3,-0.3)
+        glVertex3f(-0.3, 0.3,-0.3)
+        glVertex3f( 0.3, 0.3,-0.3)
         
-        glVertex3f(-0.5, 0.5, 0.5)
-        glVertex3f(-0.5, 0.5,-0.5)
-        glVertex3f(-0.5,-0.5,-0.5)
-        glVertex3f(-0.5,-0.5, 0.5)
+        glVertex3f(-0.3, 0.3, 0.3)
+        glVertex3f(-0.3, 0.3,-0.3)
+        glVertex3f(-0.3,-0.3,-0.3)
+        glVertex3f(-0.3,-0.3, 0.3)
         
-        glVertex3f( 0.5, 0.5,-0.5)
-        glVertex3f( 0.5, 0.5, 0.5)
-        glVertex3f( 0.5,-0.5, 0.5)
-        glVertex3f( 0.5,-0.5,-0.5)
+        glVertex3f( 0.3, 0.3,-0.3)
+        glVertex3f( 0.3, 0.3, 0.3)
+        glVertex3f( 0.3,-0.3, 0.3)
+        glVertex3f( 0.3,-0.3,-0.3)
     
     mousex = mousey = 0
     def mousePressEvent(self,event):
@@ -564,6 +582,7 @@ class MainWindow(QtGui.QMainWindow):
         if not os.path.exists(folder+'/Model'): return 0
         if not os.path.exists(folder+'/Pack/Obj'): return 0
         if not os.path.exists(folder+'/Pack/ObjSmall'): return 0
+        if not os.path.exists(folder+'/Pack/Enemy'): return 0
         return 1
 
     # luckily Splatoon has a MapInfo.byaml to load stuff in....
@@ -582,9 +601,11 @@ class MainWindow(QtGui.QMainWindow):
     def showLevelDialog(self):
         if self.levelSelect.exec_():
             # fix for a stupid bug that cuts off _ -- not as bad as hardcoding the end, though
-            exts = ('_Vss', # versus
-                   '_Msn', # mission
+            exts = ('_Vss', # Versus
+                   '_Msn', # Mission
+                   '_Mch', # Match room
                    '_Dul', # Dogo (2 player)
+                   '_Plz', # Plaza
                    '_Ttr', # Tutorial
                    '_Shr', # Shooting range
                    '_Stf', # Staff roll
