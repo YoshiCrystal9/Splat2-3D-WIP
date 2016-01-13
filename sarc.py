@@ -1,5 +1,5 @@
 """
-Copyright (C) 2015, NWPlayer123
+Copyright (C) 2015-2016, NWPlayer123, Kinnay, MrRean, RoadrunnerWMC
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
 to deal in the Software without restriction, including without limitation
@@ -25,48 +25,48 @@ import struct
 def uint16(data, pos):
     return struct.unpack(">H", data[pos:pos + 2])[0]
 def uint24(data, pos):
-    return struct.unpack(">I", "\00" + data[pos:pos + 3])[0] #HAX
+    return struct.unpack(">I", b"\00" + data[pos:pos + 3])[0] # HAX
 def uint32(data, pos):
     return struct.unpack(">I", data[pos:pos + 4])[0]
-def getstr(data):
-    x = data.find("\x00")
+def getstr(data, encoding='ascii'):
+    x = data.find(b"\x00")
     if x != -1:
-        return data[:x]
+        return data[:x].decode(encoding)
     else:
-        return data
- 
-def extract(data,fn):
+        return data.decode(encoding)
+
+def extract(data, fn):
     pos = 6
     magic = data[:4]
-    assert magic == 'SARC'
-    if uint16(data,pos) != 0xFEFF: #Big Endian
-        raise ValueError,"Little endian not supported!"
-    pos+=6
-    doff = uint32(data, pos);pos += 8 #Start of data section
+    assert magic == b'SARC'
+    if uint16(data, pos) != 0xFEFF: # Big Endian
+        raise ValueError("Little endian not supported!")
+    pos += 6
+    doff = uint32(data, pos); pos += 8 # Start of data section
     #---------------------------------------------------------------
-    magic2 = data[pos:pos + 4];pos += 6
-    assert magic2 == 'SFAT'
-    nodec = uint16(data, pos);pos += 6 #Node Count
+    magic2 = data[pos:pos + 4]; pos += 6
+    assert magic2 == b'SFAT'
+    nodec = uint16(data, pos); pos += 6 # Node Count
     nodes = []
-    for x in xrange(nodec):
-        pos+=8
-        srt  = uint32(data, pos);pos += 4 #File Offset Start
-        end  = uint32(data, pos);pos += 4 #File Offset End
+    for x in range(nodec):
+        pos += 8
+        srt  = uint32(data, pos); pos += 4 # File Offset Start
+        end  = uint32(data, pos); pos += 4 # File Offset End
         nodes.append([srt, end])
     #---------------------------------------------------------------
-    magic3 = data[pos:pos + 4];pos += 8
-    assert magic3 == 'SFNT'
+    magic3 = data[pos:pos + 4]; pos += 8
+    assert magic3 == b'SFNT'
     strings = []
-    for x in xrange(nodec):
-        string = getstr(data[pos:]);pos += len(string)
-        while ord(data[pos]) == 0: pos += 1 #Move to the next string
+    for x in range(nodec):
+        string = getstr(data[pos:]); pos += len(string)
+        while data[pos] == 0: pos += 1 # Move to the next string
         strings.append(string)
     x = strings.index(fn)
-    return data[nodes[x][0]+doff:nodes[x][1]+doff]
+    return data[nodes[x][0] + doff:nodes[x][1] + doff]
 
-def contains(data,fn):
+def contains(data, fn):
     try:
-        extract(data,fn)
+        extract(data, fn)
         return True
     except ValueError:
         return False

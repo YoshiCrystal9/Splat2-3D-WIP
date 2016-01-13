@@ -1,6 +1,5 @@
-
 """
-Copyright (C) 2015 Yannik Marchand
+Copyright (C) 2015-2016 Kinnay, MrRean, RoadrunnerWMC
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,14 +29,10 @@ official policies, either expressed or implied, of Yannik Marchand.
 import struct
 
 def String(data,offs):
-    s = ''
-    while data[offs] != '\x00':
-        s+=data[offs]
-        offs+=1
-    return s.decode('shift-jis')
+    return data[offs:].split(b'\0')[0].decode('shift-jis')
 
 def UI24(data,offs):
-    return struct.unpack('>I','\x00'+data[offs:offs+3])[0]
+    return struct.unpack('>I',b'\x00'+data[offs:offs+3])[0]
 
 def UI32(data,offs):
     return struct.unpack_from('>I',data,offs)[0]
@@ -62,7 +57,7 @@ class StringNode(ValueNode):
 class BooleanNode(ValueNode):
     def changeValue(self,val):
         self.val = bool(val)
-        bchar = '\x01' if self.val else '\x00'
+        bchar = b'\x01' if self.val else b'\x00'
         self.byml.data = self.byml.data[:self.offs]+bchar+self.byml.data[self.offs+1:]
 
 class IntegerNode(ValueNode):
@@ -99,7 +94,7 @@ class DictNode:
 
         for i in range(count):
             name = UI24(data,offs)
-            nodetype = ord(data[offs+3])
+            nodetype = data[offs+3]
             value = UI32(data,offs+4)
             offs+=8
 
@@ -123,7 +118,7 @@ class DictNode:
             elif nodetype == 0xFF:
                 self.dict[sname] = NoneNode(None,offs-8,self.byml)
             else:
-                raise ValueError,"Unknown Dictionary Node Type: "+hex(nodetype)
+                raise ValueError("Unknown Dictionary Node Type: "+hex(nodetype))
 
         self.parsed = True
 
@@ -135,7 +130,7 @@ class DictNode:
 
     def getSubNode(self,name):
         if not name in self.dict:
-            raise NameError,"Dictionary has no sub node named "+str(name)
+            raise ValueError("Dictionary has no sub node named "+str(name))
 
         self.dict[name].parse()
         return self.dict[name]
@@ -143,7 +138,7 @@ class DictNode:
     def getSubValue(self,name):
         node = self.getSubNode(name)
         if not isinstance(node,ValueNode):
-            raise TypeError,"Diction sub node is not a value node"
+            raise TypeError("Diction sub node is not a value node")
         return node.val
 
     def subNodes(self):
@@ -157,6 +152,12 @@ class ArrayNode:
         self.offs = offs
         self.array = []
         self.byml = byml
+
+    def __getitem__(self,name):
+        node = self.getSubNode(name)
+        if isinstance(node,ValueNode):
+            return node.val
+        return node    
 
     def __len__(self):
         return len(self.array)
@@ -175,7 +176,7 @@ class ArrayNode:
         
         types = []
         for i in range(count):
-            types.append(ord(data[offs]))
+            types.append(data[offs])
             offs+=1
             
         if offs%4:
@@ -194,7 +195,7 @@ class ArrayNode:
             elif type == 0xC1:
                 self.array.append(DictNode(offs[1]+1,self.byml))
             else:
-                raise ValueError,"Unknown array node type: "+hex(type)
+                raise ValueError("Unknown array node type: "+hex(type))
 
         self.parsed = True
 
@@ -206,7 +207,7 @@ class ArrayNode:
 class BYML:
     def __init__(self,data):
         self.data = data
-        assert data[:2] == 'BY'
+        assert data[:2] == b'BY'
         self.offs1 = UI32(data,4)
         self.offs2 = UI32(data,8)
         self.offs3 = UI32(data,12)
@@ -220,7 +221,7 @@ class BYML:
 
     def doStringTable(self,offs,l):
         soffs = offs
-        assert self.data[offs] == '\xC2'
+        assert self.data[offs] == 0xC2
         count = UI24(self.data,offs+1)
         offs+=4
         for i in range(count):
@@ -229,13 +230,13 @@ class BYML:
         return offs
 
     def getRootNode(self,offs):
-        type = ord(self.data[offs])
+        type = self.data[offs]
         if type == 0xC0:
             node = ArrayNode(offs+1,self)
         elif type == 0xC1:
             node = DictNode(offs+1,self)
         else:
-            raise ValueError,'Unknown Section Type: '+hex(type)
+            raise ValueError('Unknown Section Type: '+hex(type))
         return node
 
     def stringChanged(self,node):
@@ -248,7 +249,7 @@ class BYML:
                 self.strings.append(node.val)
                 self.offs3 += 4
                 self.data = self.data[:self.stringEnd]+struct.pack('>I',len(self.data))+self.data[self.stringEnd:]
-                self.data += node.val+'\x00'
+                self.data += node.val+b'\x00'
             self.data = self.data[:node.offs]+struct.pack('>I',self.strings.index(node.val))+self.data[node.offs+4:]
 
         self.data = self.data[:12]+struct.pack('>I',self.offs3)+self.data[16:]
