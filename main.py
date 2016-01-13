@@ -25,15 +25,20 @@ The views and conclusions contained in the software and documentation
 are those of the authors and should not be interpreted as representing
 official policies, either expressed or implied, of Yannik Marchand.
 """
-# taken from reggienext
-# for seeing if you have the right version
-#minimumVer = 3.4
+# make this 1 to enable a lot more info printed on the console
+debugMode = 1
+
+if debugMode == 1:
+    print('Starting in debug mode...')
+
+# taken from reggienext, for seeing if you have the right version
+minimumVer = 3.4
 import sys
-#currentRunningVersion = sys.version_info.major + (.1 * sys.version_info.minor)
-#if currentRunningVersion < minimumVer:
-#    errormsg = 'Please update your copy of Python to ' + str(minimumVer) + \
-#        ' or greater. Currently running on: ' + sys.version[:5] + ' . However, there is a(n) [outdated] python 2.7 version avaliable.'
-#    raise Exception(errormsg)
+currentRunningVersion = sys.version_info.major + (.1 * sys.version_info.minor)
+if currentRunningVersion < minimumVer:
+    errormsg = 'Please update your copy of Python to ' + str(minimumVer) + \
+        ' or greater. Currently running on: ' + sys.version[:5] + ' . However, there is a(n) [outdated] python 2.7 version avaliable.'
+    raise Exception(errormsg)
 
 # PyQt5 import checker
 try:
@@ -223,15 +228,15 @@ class LevelObject:
         self.data = obj
         self.color = (color//100/10,((color//10)%10)/10,(color%10)/10)
         color+=1
-        print("Self.color output:" + str(self.color))
-        #print("Color output :" + str(color))
+        if debugMode == 1:
+            print("Self.color output:" + str(self.color))
+            print("Color output :" + str(color))
         self.list = dlist
         
         trans = obj['Translate']
         self.posx = trans['X']/100
         self.posy = trans['Y']/100
         self.posz = trans['Z']/100
-        #print('POSITIONS: X -- ' + str(self.posx) + ' Y -- ' + str(self.posy) + ' Z -- ' + str(self.posz))
 
         rot = obj['Rotate']
         self.rotx = rot['X']
@@ -304,7 +309,6 @@ class LevelWidget(QGLWidget):
 
     def reset(self):
         self.objects = []
-        #print("RESET! Self.objects output: " + str(self.objects))
         self.rotx = self.roty = self.rotz = 0
         self.posx = self.posy =  0
         self.posz = -300
@@ -314,9 +318,10 @@ class LevelWidget(QGLWidget):
         array = (GLuint * 1)(0)
         pixel = glReadPixels(x,self.height()-y,1,1,GL_RGB,GL_UNSIGNED_BYTE,array)
         r,g,b = [round(((array[0]>>(i*8))&0xFF)/255.0,1) for i in range(3)]
-        #print("R " + str(r))
-        #print("G " + str(g))
-        #print("B " + str(b))       
+        if debugMode == 1:
+            print("R " + str(r))
+            print("G " + str(g))
+            print("B " + str(b))       
         self.picked = None
         window.settings.reset()
         for obj in self.objects:
@@ -324,7 +329,8 @@ class LevelWidget(QGLWidget):
                 self.picked = obj
                 break
         if self.picked:
-            #print('Picked State: ' + str(self.picked))
+            if debugMode == 1:
+                print('Picked State: ' + str(self.picked))
             window.settings.showSettings(self.picked)
         self.updateGL()
 
@@ -370,7 +376,7 @@ class LevelWidget(QGLWidget):
             with open(window.gamePath+'/Model/'+name+'.szs','rb') as f:
                 data = f.read()
                 print('Loading Map Model '+name+'!')
-        if  os.path.isfile(window.gamePath+'/Pack/Obj/Model/'+name+'.szs'):
+        elif  os.path.isfile(window.gamePath+'/Pack/Obj/Model/'+name+'.szs'):
             with open(window.gamePath+'/Pack/Obj/Model/'+name+'.szs','rb') as f:
                 data = f.read()
                 print('Loading object '+name+'!')
@@ -478,8 +484,9 @@ class LevelWidget(QGLWidget):
     def mousePressEvent(self,event):
         if event.button() == 1:
             self.pickObjects(event.x(),event.y())
-            print(event.x())
-            print(event.y())
+            if debugMode == 1:
+                print('Mouse click X: ' + str(event.x()))
+                print('Mouse click Y: ' + str(event.y()))
 
         self.mousex = event.x()
         self.mousey = event.y()
@@ -686,7 +693,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """        
         modelName = obj['ModelName'] if obj['ModelName'] else obj['UnitConfigName']
         regularName = str(obj['UnitConfigName'])
-        #print('loaded object ' + objectName(regularName))     
+        print('Loaded object ' + objectName(regularName))     
         self.glWidget.addObject(obj,modelName)
 
     def openParamEditor(self):
