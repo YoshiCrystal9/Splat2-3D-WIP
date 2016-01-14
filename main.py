@@ -220,7 +220,7 @@ class SettingsWidget(QtWidgets.QWidget):
             elif key == 'Text':
                 lbl = QtWidgets.QLabel(key+':')
                 box = QtWidgets.QLineEdit(str(obj.data['Text']))
-                box.setEnabled(True)
+                box.setEnabled(False)
                 self.layout.addWidget(lbl)
                 self.layout.addWidget(box)                
 
