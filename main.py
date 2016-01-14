@@ -26,7 +26,7 @@ are those of the authors and should not be interpreted as representing
 official policies, either expressed or implied, of Yannik Marchand.
 """
 # make this 1 to enable a lot more info printed on the console
-debugMode = 1
+debugMode = 0
 
 if debugMode == 1:
     print('Starting in debug mode...')
@@ -101,6 +101,7 @@ class SettingsWidget(QtWidgets.QWidget):
         scroll = QtWidgets.QScrollArea()
         scroll.setWidgetResizable(True)
         layout.addWidget(scroll)
+       
 
         scrollContents = QtWidgets.QWidget()
         self.layout = QtWidgets.QVBoxLayout(scrollContents)
@@ -116,7 +117,17 @@ class SettingsWidget(QtWidgets.QWidget):
         currentName = obj.data['UnitConfigName']
         self.config_lbl = QtWidgets.QLabel(objectName(currentName))
         self.config_lbl.setStyleSheet('font-size: 16px')
+        self.config_lbl.setToolTip(obj.data['UnitConfigName'])
         self.layout.addWidget(self.config_lbl)
+
+        confName = obj.data['UnitConfigName']
+        if confName == 'RespawnPos':
+            objdesc = 'The location where one team \nrespawns.'
+        else:
+            objdesc = 'There is no info on this \n object yet.'
+        self.desc_lbl = QtWidgets.QLabel(objdesc)
+        self.desc_lbl.setStyleSheet('font-size: 13px')
+        self.layout.addWidget(self.desc_lbl)
 
         lbl = QtWidgets.QLabel('Translate:')
         lbl.setStyleSheet('font-size: 14px')
@@ -151,7 +162,7 @@ class SettingsWidget(QtWidgets.QWidget):
         for key in obj.data:
             vnode = obj.data.getSubNode(key)
             if not key in ['Scale','Translate','Rotate','UnitConfig','Links','UnitConfigName',
-                           'IsLinkDest','ModelSuffix','ModelName']:
+                           'IsLinkDest','ModelSuffix','ModelName', 'Team', 'Text']:
                 lbl = QtWidgets.QLabel(SettingName(key)+':')
                 if isinstance(vnode,byml.FloatNode):
                     box = FloatEdit(obj.data[key],self.changed2)
@@ -166,10 +177,10 @@ class SettingsWidget(QtWidgets.QWidget):
                 elif isinstance(vnode,byml.StringNode):
                     box = LineEdit(str(obj.data[key]),self.changed2)
                     box.node = vnode
-                    box.setEnabled(False)
+                    box.setEnabled(True)
                 else:
                     box = QtWidgets.QLineEdit(str(obj.data[key]))
-                    box.setEnabled(False)
+                    box.setEnabled(True)
                 self.layout.addWidget(lbl)
                 self.layout.addWidget(box)
                 
@@ -192,6 +203,26 @@ class SettingsWidget(QtWidgets.QWidget):
                     box.setEnabled(False)
                 self.layout.addWidget(lbl)
                 self.layout.addWidget(box)
+                
+            elif key == 'Team':
+                self.team_lbl = QtWidgets.QLabel(key+':')              
+                if isinstance(vnode,byml.IntegerNode):
+                    self.team_box = LineEdit((obj.data['Team']),self.changed2)
+                    self.team_box.setToolTip('A value of 2 means neutral, for all game modes.')  
+                    self.team_box.node = vnode
+                else:
+                    self.team_box = QtWidgets.QLineEdit(obj.data['Team'])
+                    self.team_box.setToolTip('A value of 2 means neutral, for all game modes.')      
+                    self.team_box.setEnabled(True)
+                self.layout.addWidget(self.team_lbl)
+                self.layout.addWidget(self.team_box)
+
+            elif key == 'Text':
+                lbl = QtWidgets.QLabel(key+':')
+                box = QtWidgets.QLineEdit(str(obj.data['Text']))
+                box.setEnabled(True)
+                self.layout.addWidget(lbl)
+                self.layout.addWidget(box)                
 
     def changed(self,box):
         if self.transx.text() and self.transy.text() and self.transz.text() and self.rotx.text() and self.roty.text() and self.rotz.text() and self.sclx.text() and self.scly.text() and self.sclz.text():
@@ -372,31 +403,42 @@ class LevelWidget(QGLWidget):
 
     # chain for loading models, they're seperated in the game for some reason
     def loadModel(self,name):
-        if os.path.isfile(window.gamePath+'/Model/'+name+'.szs'):
-            with open(window.gamePath+'/Model/'+name+'.szs','rb') as f:
-                data = f.read()
-                print('Loading Map Model '+name+'!')
-        elif  os.path.isfile(window.gamePath+'/Pack/Obj/Model/'+name+'.szs'):
-            with open(window.gamePath+'/Pack/Obj/Model/'+name+'.szs','rb') as f:
-                data = f.read()
-                print('Loading object '+name+'!')
-        elif os.path.isfile(window.gamePath+'/Pack/ObjSmall/Model/'+name+'.szs'):
-            with open(window.gamePath+'/Pack/ObjSmall/Model/'+name+'.szs','rb') as f:
-                data = f.read()
-                print('Loading SmallObj '+name+'!')
-        elif os.path.isfile(window.gamePath+'/Pack/Enemy/Model/'+name+'.szs'):
-            with open(window.gamePath+'/Pack/Enemy/Model/'+name+'.szs','rb') as f:
-                data = f.read()
-                print('Loading enemy model '+name+'!')                
-        else:
-            return self.cubeList
+        paths = ('/Model/',
+               '/Pack/Obj/Model/',
+               '/Pack/ObjSmall/Model/',
+               '/Pack/Enemy/Model/')
+        
+        for objpath in paths:
+            base = window.gamePath + str(objpath) + str(name)
+            if os.path.isfile(str(base) + '.sarc'):
+                ext = '.sarc'
+            elif os.path.isfile(str(base) + '.szs'):
+                ext = '.szs'
+            else:
+                kind = '(skipped)'
+                continue
 
-        sarchive = yaz0.decompress(data)
-        if sarc.contains(sarchive, 'Output.bfres'):
-            bfres = sarc.extract(sarchive, 'Output.bfres')
-            model = fmdl.parse(bfres)
-            return self.generateList(model)
-        return self.cubeList
+            if os.path.isfile(str(base) + str(ext)):
+                with open(base + ext, 'rb') as f:
+                    data = f.read()
+                    print('Loading model ' + name + '!')
+                    if data.startswith(b'Yaz0'):
+                        print('Decompressing Yaz0...')
+                        yaz0archive = yaz0.decompress(data)
+                        if sarc.contains(yaz0archive, 'Output.bfres'):
+                            bfres = sarc.extract(yaz0archive, 'Output.bfres')
+                            model = fmdl.parse(bfres)
+                            return self.generateList(model)
+                    else:
+                        print('Skipping yaz0 decompression')
+                        sarchive = data
+                        if sarc.contains(sarchive, 'Output.bfres'):
+                            bfres = sarc.extract(sarchive, 'Output.bfres')
+                            model = fmdl.parse(bfres)
+                            return self.generateList(model)                                         
+                    break              
+        else:
+            return self.cubeList         
 
     def generateList(self,model):
         displayList = glGenLists(1)
@@ -652,8 +694,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if os.path.isfile(self.gamePath + '/Pack/Static/Map/' + levelSelect.currentLevel + '.szs'):
             with open(str(self.gamePath+'/Pack/Static/Map/'+levelSelect.currentLevel + '.szs'),'rb') as f:
                 data = f.read()
-            levelData = byml.BYML(sarc.extract(yaz0.decompress(data),levelSelect.currentLevel + '.byaml'))
-            self.loadLevel(levelData.rootNode)
+            self.levelData = byml.BYML(sarc.extract(yaz0.decompress(data),levelSelect.currentLevel + '.byaml'))
+            self.loadLevel(self.levelData.rootNode)
             self.setWindowTitle("Splat3D ALPHA v0.2 " + levelSelect.currentLevel + '.szs' + ' (' + levelName(levelSelect.currentLevel) + ')')
         else:
             return
@@ -783,7 +825,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.keyPresses[event.key()] = 1
 
     def wheelEvent(self,event):
-        self.glWidget.posz += event.delta()/15
+        self.glWidget.posz += event.angleDelta().y() / 15
         self.glWidget.updateGL()
 
 def main():
