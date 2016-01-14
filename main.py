@@ -177,10 +177,10 @@ class SettingsWidget(QtWidgets.QWidget):
                 elif isinstance(vnode,byml.StringNode):
                     box = LineEdit(str(obj.data[key]),self.changed2)
                     box.node = vnode
-                    box.setEnabled(True)
+                    box.setEnabled(False)
                 else:
                     box = QtWidgets.QLineEdit(str(obj.data[key]))
-                    box.setEnabled(True)
+                    box.setEnabled(False)
                 self.layout.addWidget(lbl)
                 self.layout.addWidget(box)
                 
