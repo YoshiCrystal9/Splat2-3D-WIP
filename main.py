@@ -74,19 +74,48 @@ class CheckBox(QtWidgets.QCheckBox):
     def changed(self,state):
         self.node.changeValue(state==QtCore.Qt.Checked)
 
+teams = [
+        'Team Alpha',
+        'Team Beta',
+        'Neutral'
+        ]
+
+class ComboBoxEdit(QtWidgets.QComboBox):
+    def __init__(self, value, callback):
+        super().__init__()
+        self.clear()
+        self.addItems(teams)
+        self.setCurrentIndex(value % 3)
+        self.callback = callback
+        self.currentIndexChanged.connect(self.changedValue)
+
+    def changedValue(self, value):
+        self.callback(self)        
+
+class FloatBoxEdit(QtWidgets.QDoubleSpinBox):
+    def __init__(self, value, callback):
+        super().__init__()
+        self.setSingleStep(0.1)
+        self.setRange(-99999999, 999999999)
+        self.setValue(value)
+        self.callback = callback
+        self.valueChanged.connect(self.changedValue)
+
+    def changedValue(self, value):
+        self.callback(self)
+
 class LineEdit(QtWidgets.QLineEdit):
     def __init__(self,value,callback):
         QtWidgets.QLineEdit.__init__(self,str(value))
         self.callback = callback
         self.textChanged[str].connect(self.changed)
 
-    def changed(self,text):
+    def changed(self,text): 
         if text:
             self.callback(self)
 
 def FloatEdit(v,cb):
-    edit = LineEdit(v,cb)
-    edit.setValidator(QtGui.QDoubleValidator())
+    edit = FloatBoxEdit(v,cb)
     return edit
 
 def IntEdit(v,cb):
@@ -207,11 +236,11 @@ class SettingsWidget(QtWidgets.QWidget):
             elif key == 'Team':
                 self.team_lbl = QtWidgets.QLabel(key+':')              
                 if isinstance(vnode,byml.IntegerNode):
-                    self.team_box = LineEdit((obj.data['Team']),self.changed2)
+                    self.team_box = ComboBoxEdit((obj.data['Team']),self.changed)
                     self.team_box.setToolTip('A value of 2 means neutral, for all game modes.')  
                     self.team_box.node = vnode
                 else:
-                    self.team_box = QtWidgets.QLineEdit(obj.data['Team'])
+                    self.team_box = ComboBoxEdit(obj.data['Team'])
                     self.team_box.setToolTip('A value of 2 means neutral, for all game modes.')      
                     self.team_box.setEnabled(True)
                 self.layout.addWidget(self.team_lbl)
@@ -364,7 +393,7 @@ class LevelWidget(QGLWidget):
                 print('Picked State: ' + str(self.picked))
             window.settings.showSettings(self.picked)
         self.updateGL()
-
+        
     def paintGL(self,pick=0):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
@@ -389,8 +418,8 @@ class LevelWidget(QGLWidget):
         gluPerspective(45.0,float(w)/float(h),0.1,750.0)
         glMatrixMode(GL_MODELVIEW)
 
-    def initializeGL(self):
-        glClearColor(0.3,0.3,1.0,0.0)
+    def initializeGL(self):  
+        glClearColor(0.3,0.3,1.0,0.0)      
         glDepthFunc(GL_LEQUAL)
         glEnable(GL_DEPTH_TEST)
         self.generateCubeList()
@@ -489,7 +518,7 @@ class LevelWidget(QGLWidget):
 
         glEndList()
 
-        self.cubeList = displayList
+        self.cubeList = displayList     
 
     def drawCube(self):
         glVertex3f( 0.3, 0.3,-0.3)
@@ -784,9 +813,9 @@ class MainWindow(QtWidgets.QMainWindow):
         with open(fn,'wb') as f:
             self.levelData.saveChanges()
             f.write(self.levelData.data)
-
+            
     def setupGLScene(self):
-        self.glWidget = LevelWidget(self)
+        self.glWidget = LevelWidget(self)      
         self.glWidget.show()
 
     def resizeWidgets(self):
