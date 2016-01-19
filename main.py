@@ -57,7 +57,7 @@ except (ImportError, NameError):
 
 import os
 
-from names import levelName, objectName, SettingName
+from names import description, levelName, objectName, SettingName
 import byml, fmdl, sarc, yaz0
 
 import datetime
@@ -150,11 +150,7 @@ class SettingsWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.config_lbl)
 
         confName = obj.data['UnitConfigName']
-        if confName == 'RespawnPos':
-            objdesc = 'The location where one team \nrespawns.'
-        else:
-            objdesc = 'There is no info on this \n object yet.'
-        self.desc_lbl = QtWidgets.QLabel(objdesc)
+        self.desc_lbl = QtWidgets.QLabel(description(confName))
         self.desc_lbl.setStyleSheet('font-size: 13px')
         self.layout.addWidget(self.desc_lbl)
 
@@ -292,6 +288,8 @@ class LevelObject:
             print("Self.color output:" + str(self.color))
             print("Color output :" + str(color))
         self.list = dlist
+        if debugMode == 1:
+            print(self.list)
         
         trans = obj['Translate']
         self.posx = trans['X']/100
@@ -353,15 +351,19 @@ class LevelObject:
         if not model in window.glWidget.cache:
             window.glWidget.cache[model] = window.glWidget.loadModel(model)
         self.list = window.glWidget.cache[model]
+        if debugMode == 1:
+            print(self.list)
         window.glWidget.updateGL()
 
 class LevelWidget(QGLWidget):
 
     objects = []
     cache = {}
-    rotx = roty = rotz = 0
+    rotx = 45
+    roty = -45
+    rotz = 0
     posx = posy = 0
-    posz = -300
+    posz = -10
     picked = None
     
     def __init__(self,parent):
@@ -369,9 +371,11 @@ class LevelWidget(QGLWidget):
 
     def reset(self):
         self.objects = []
-        self.rotx = self.roty = self.rotz = 0
-        self.posx = self.posy =  0
-        self.posz = -300
+        self.rotx = 0
+        self.roty = 0
+        self.rotz = 0
+        self.posx = self.posy = 0
+        self.posz = 0
 
     def pickObjects(self,x,y):
         self.paintGL(1)
@@ -396,11 +400,23 @@ class LevelWidget(QGLWidget):
         
     def paintGL(self,pick=0):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glLoadIdentity()
+        glLoadIdentity()         
         glTranslatef(self.posx,self.posy,self.posz)
         glRotatef(self.rotx,1.0,0.0,0.0)
         glRotatef(self.roty,0.0,1.0,0.0)
         glRotatef(self.rotz,0.0,0.0,1.0)
+        glBegin(GL_LINES)
+        glColor3f(0.0,0.0,0.0)
+        glColor3f(1, 0, 0)
+        glVertex3f(0, 0, 0)
+        glVertex3f(10000, 0, 0)
+        glColor3f(0, 1, 0)
+        glVertex3f(0, 0, 0)
+        glVertex3f(0, 10000, 0)
+        glColor3f(0, 0, 1)
+        glVertex3f(0, 0, 0)
+        glVertex3f(0, 0, 10000)
+        glEnd()        
         for obj in self.objects:
             if obj == self.picked:
                 glColor3f(1.0,0.0,0.0)
@@ -422,13 +438,19 @@ class LevelWidget(QGLWidget):
         glClearColor(0.3,0.3,1.0,0.0)      
         glDepthFunc(GL_LEQUAL)
         glEnable(GL_DEPTH_TEST)
-        self.generateCubeList()
+        self.generateCubeList()  
 
     def addObject(self,obj,modelName):
         if not modelName in self.cache:
             self.cache[modelName] = self.loadModel(modelName)
         lobj = LevelObject(obj,self.cache[modelName])
         self.objects.append(lobj)
+
+##    def addRail(self, rail, modelName):
+##        if not modelName in self.cache:
+##            self.cache[modelName] = self.loadModel(modelName)
+##        lobj = LevelObject(rail,self.cache[modelName])
+##        self.objects.append(lobj)        
 
     # chain for loading models, they're seperated in the game for some reason
     def loadModel(self,name):
@@ -450,21 +472,25 @@ class LevelWidget(QGLWidget):
             if os.path.isfile(str(base) + str(ext)):
                 with open(base + ext, 'rb') as f:
                     data = f.read()
-                    print('Loading model ' + name + '!')
+                    print('Loading model ' + name + '!')   
                     if data.startswith(b'Yaz0'):
                         print('Decompressing Yaz0...')
                         yaz0archive = yaz0.decompress(data)
-                        if sarc.contains(yaz0archive, 'Output.bfres'):
+                        if b"Output.bfres" in yaz0archive:
                             bfres = sarc.extract(yaz0archive, 'Output.bfres')
                             model = fmdl.parse(bfres)
                             return self.generateList(model)
+                        else:
+                            return self.cubeList   
                     else:
                         print('Skipping yaz0 decompression')
                         sarchive = data
-                        if sarc.contains(sarchive, 'Output.bfres'):
+                        if b"Output.bfres" in sarchive:
                             bfres = sarc.extract(sarchive, 'Output.bfres')
                             model = fmdl.parse(bfres)
-                            return self.generateList(model)                                         
+                            return self.generateList(model)
+                        else:
+                            return self.cubeList   
                     break              
         else:
             return self.cubeList         
@@ -592,7 +618,7 @@ class ChooseLevelDialog(QtWidgets.QDialog):
             levelNode = QtWidgets.QTreeWidgetItem()
             levelNode.setData(0,QtCore.Qt.UserRole,level['MapFileName'])
             darp = level['MapFileName']
-            levelNode.setText(0,'Stage '+str(level['MapFileName']) + ' (' + levelName(darp) + ')')
+            levelNode.setText(0,levelName(darp) + ' (' + level['MapFileName'] + ')')
             nodes.append(levelNode)
         tree.addTopLevelItems(nodes)
 
@@ -751,6 +777,23 @@ class MainWindow(QtWidgets.QMainWindow):
             self.glWidget.updateGL()
             i+=1
         progress.setValue(i)
+        
+##        amount2 = len(levelData['Rails']) # load the Objs subnode
+##        progress2 = QtWidgets.QProgressDialog(self)
+##        progress2.setCancelButton(None)
+##        progress2.setMinimumDuration(0)
+##        progress2.setRange(0,amount2)
+##        progress2.setWindowModality(QtCore.Qt.WindowModal)
+##        progress2.setWindowTitle('Loading...')            
+##        i2 = 0
+##        for rail in levelData['Rails']: # load the objects
+##            progress.setLabelText('Loading rail '+str(i2+1)+'/'+str(amount2)) # count, etc etc
+##            progress.setValue(i2)
+##            self.loadRail(rail)
+##            self.glWidget.updateGL()
+##            i2+=1            
+##        progress2.setValue(i2)
+        
         self.saveAction.setEnabled(True)
         doneBox = QtWidgets.QMessageBox()
         doneBox.setWindowTitle('Stage loaded')
@@ -766,6 +809,15 @@ class MainWindow(QtWidgets.QMainWindow):
         regularName = str(obj['UnitConfigName'])
         print('Loaded object ' + objectName(regularName))     
         self.glWidget.addObject(obj,modelName)
+
+##    def loadRail(self,rail):
+##        """
+##        Loads a rail, with said rail being the argument
+##        """
+##        modelName = rail['ModelName'] if rail['ModelName'] else rail['UnitConfigName']
+##        regularName = str(rail['UnitConfigName'])
+##        print('Loaded rail ' + regularName)    
+##        self.glWidget.addRail(rail, modelName)        
 
     def openParamEditor(self):
         """

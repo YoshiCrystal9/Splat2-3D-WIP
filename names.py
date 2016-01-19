@@ -25,72 +25,51 @@ The views and conclusions contained in the software and documentation
 are those of the authors and should not be interpreted as representing
 official policies, either expressed or implied, of Yannik Marchand.
 """
+def description(confName):
+    descs = {
+        'RespawnPos': 'The location where one team \nrespawns.',
+        'Fld_Crank00': 'The Urchin Underpass map.',
+        'GachihokoRouteArea': 'A line for tower control. \nConnects two points.',
+        'GachihokoTargetPoint': 'A point for tower control. \nThis is where a line connects.',
+        'Obj_Tree00': 'A tree. It can be painted on.',
+        'Obj_VictoryPoint': 'A point where one team wins. \nThe winning point for \nRainmaker and Tower Control.',
+        'Obj_VictoryLift': 'The Tower! Bring it to the \nenemy goal to win!',
+        'Obj_Windsock': 'A decoration. It blows in the \nwind.',
+        'Obj_Bunker01': 'A bunker for protection!',
+        }
+    return descs.get(confName, confName)
+        
 def SettingName(oldName):
-    if oldName == 'PaintDefault':
-        return 'Painted Default?'
-    if oldName == 'FloatParameter0':
-        return 'Floating Parameter 0'
-    if oldName == 'FloatParameter1':
-        return 'Floating Parameter 1'
-    if oldName == 'FloatParameter2':
-        return 'Floating Parameter 2'
-    if oldName == 'FloatParameter3':
-        return 'Floating Parameter 3'
-    if oldName == 'FloatParameter4':
-        return 'Floating Parameter 4'
-    if oldName == 'PaintRatePerBullet':
-        return 'Painting Rate'
-    if oldName == 'IsAbleToBeVsCulled':
-        return 'Is Vs Culled'       
-    return oldName
+    params = {
+        }     
+    return params.get(oldName, oldName)
 
 def objectName(oldobjectName):
-    if oldobjectName == 'Brd_Sparrow00':
-        return 'Sparrow'
-    if oldobjectName == 'ScrambleBombFlower':
-        return 'Rainmaker'
-    if oldobjectName == 'RespawnPos':
-        return 'Respawn Position'
-    if oldobjectName == 'StartPos':
-        return 'Starting Position'
-    if oldobjectName == 'Obj_VictoryLift':
-        return 'Tower Control Tower'
-    if oldobjectName == 'PaintTargetArea':
-        return 'Splat Zone'
-    if oldobjectName == 'Obj_VictoryPoint':
-        return 'Victory Point'
-    if oldobjectName == 'Obj_Jerry00':
-        return 'Jellyfish'
-    if oldobjectName == 'GachihokoTargetPoint':
-        return 'Tower Control Point'
-    if oldobjectName == 'GachihokoRouteArea':
-        return 'Tower Control Line'
-    if oldobjectName == 'Obj_Tree00':
-        return 'Tree'
-    if oldobjectName == 'Obj_SeaGull':
-        return 'Seagull'
-    if oldobjectName == 'Obj_Windsock':
-        return 'Windsock'
-    if oldobjectName == 'Lft_HeavyCraneMachine':
-        return 'Saltspray Crane'
-    if oldobjectName == 'Obj_Flag':
-        return 'Flag'
-    if oldobjectName == 'Obj_AirDancer':
-        return 'Air Dancer'
-    if oldobjectName == 'Obj_Grass00':
-        return 'Grass'
-    if oldobjectName == 'Lft_Forklift':
-        return 'Forklift'
-    if oldobjectName == 'Obj_TreeBanana':
-        return 'Banana Tree'
-    if oldobjectName == 'ExplanationTextObj':
-        return 'Explanation Trigger'
-    if oldobjectName == 'SwitchAllDead':
-        return 'Extermination Switch'
-    
-    
-    
-    return oldobjectName
+    objs = {
+        'Brd_Sparrow00': 'Sparrow',
+        'ScrambleBombFlower': 'Rainmaker',
+        'RespawnPos': 'Respawn Position',
+        'StartPos': 'Starting Position',
+        'Obj_VictoryLift': 'Tower Control Tower',
+        'PaintTargetArea': 'Splat Zone',
+        'Obj_VictoryPoint': 'Victory Point',
+        'Obj_Jerry00': 'Jellyfish',
+        'GachihokoTargetPoint': 'Tower Control Point',
+        'GachihokoRouteArea': 'Tower Control Line',
+        'Obj_Tree00': 'Tree',
+        'Obj_SeaGull': 'Seagull',
+        'Obj_Windsock': 'Windsock',
+        'Lft_HeavyCraneMachine': 'Saltspray Crane',
+        'Obj_Flag': 'Flag',
+        'Obj_AirDancer': 'Air Dancer',
+        'Obj_Grass00': 'Grass',
+        'Lft_Forklift': 'Forklift',
+        'Obj_TreeBanana': 'Banana Tree',
+        'ExplanationTextObj': 'Explanation Trigger',
+        'SwitchAllDead': 'Extermination Switch',
+        'Fld_Crank00': 'Urchin Underpass Map',
+        }
+    return objs.get(oldobjectName, oldobjectName)
 
 def levelName(oldlevelName):
     if oldlevelName.startswith('Test'):
@@ -115,5 +94,13 @@ def levelName(oldlevelName):
         return 'Moray Towers (VSS)'
     if oldlevelName == 'Fld_Ruins00_Vss':
         return 'Bluefin Depot (VSS)'
+    if oldlevelName == 'Fld_ShootingRange_Shr':
+        return 'Shooting Range'
+    if oldlevelName == 'Fld_Tutorial00_Ttr':
+        return 'Tutorial Stage'
+    if oldlevelName == 'Fld_World00_Wld':
+        return 'Octovalley Map'
+    if oldlevelName == 'Fld_Plaza00_Plz':
+        return 'Inkopolis'
 
     return oldlevelName
