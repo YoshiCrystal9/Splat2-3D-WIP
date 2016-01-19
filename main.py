@@ -469,6 +469,9 @@ class LevelWidget(QGLWidget):
                 kind = '(skipped)'
                 continue
 
+            if base == window.gamePath + '/Pack/ObjSmall/Model/Obj_DemoPlayer':
+                return self.cubeList
+            
             if os.path.isfile(str(base) + str(ext)):
                 with open(base + ext, 'rb') as f:
                     data = f.read()
