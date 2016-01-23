@@ -57,15 +57,17 @@ except (ImportError, NameError):
 
 import os
 
-from names import description, levelName, objectName, SettingName
+from names import description, levelName, objectName, SettingName, ReplaceModel
 import byml, fmdl, sarc, yaz0
 
 import datetime
 now = datetime.datetime.now
 
 color = 1
-
 class CheckBox(QtWidgets.QCheckBox):
+    """
+    A checkbox widget for setting a value of 0 or 1 within a node.
+    """
     def __init__(self,node):
         QtWidgets.QCheckBox.__init__(self)
         self.stateChanged.connect(self.changed)
@@ -81,6 +83,9 @@ teams = [
         ]
 
 class ComboBoxEdit(QtWidgets.QComboBox):
+    """
+    A combobox widget for choosing a value rather than manually inputting it
+    """
     def __init__(self, value, callback):
         super().__init__()
         self.clear()
@@ -93,6 +98,9 @@ class ComboBoxEdit(QtWidgets.QComboBox):
         self.callback(self)        
 
 class FloatBoxEdit(QtWidgets.QDoubleSpinBox):
+    """
+    Class for a QDoubleSpinBox, for floating points and various values
+    """
     def __init__(self, value, callback):
         super().__init__()
         self.setSingleStep(0.1)
@@ -105,6 +113,9 @@ class FloatBoxEdit(QtWidgets.QDoubleSpinBox):
         self.callback(self)
 
 class LineEdit(QtWidgets.QLineEdit):
+    """
+    A simple QLineEdit widget for editing a value, such as a string.
+    """
     def __init__(self,value,callback):
         QtWidgets.QLineEdit.__init__(self,str(value))
         self.callback = callback
@@ -115,10 +126,16 @@ class LineEdit(QtWidgets.QLineEdit):
             self.callback(self)
 
 def FloatEdit(v,cb):
+    """
+    Returns an edit for a float
+    """
     edit = FloatBoxEdit(v,cb)
     return edit
 
 def IntEdit(v,cb):
+    """
+    Returns an edit for an integer
+    """
     edit = LineEdit(v,cb)
     edit.setValidator(QtGui.QIntValidator())
     return edit
@@ -186,8 +203,8 @@ class SettingsWidget(QtWidgets.QWidget):
 
         for key in obj.data:
             vnode = obj.data.getSubNode(key)
-            if not key in ['Scale','Translate','Rotate','UnitConfig','Links','UnitConfigName',
-                           'IsLinkDest','ModelSuffix','ModelName', 'Team', 'Text']:
+            if not key in ['Scale','Translate','Rotate','UnitConfig','UnitConfigName',
+                           'ModelName', 'Team', 'Text']:
                 lbl = QtWidgets.QLabel(SettingName(key)+':')
                 if isinstance(vnode,byml.FloatNode):
                     box = FloatEdit(obj.data[key],self.changed2)
@@ -365,18 +382,30 @@ class LevelWidget(QGLWidget):
     posx = posy = 0
     posz = -10
     picked = None
+    bgcolor = (0, 0, 0, 0)
     
     def __init__(self,parent):
         QGLWidget.__init__(self,parent)
 
+    def getTeam(self, obj):
+        teamobj = obj.data['Team']
+        print(str(teamobj))
+
     def reset(self):
         self.objects = []
-        self.rotx = 0
-        self.roty = 0
+        self.rotx = 45
+        self.roty = -45
         self.rotz = 0
         self.posx = self.posy = 0
-        self.posz = 0
+        self.posz = -10
 
+    def resetCamera(self):
+        self.rotx = 45
+        self.roty = -45
+        self.rotz = 0
+        self.posx = self.posy = 0
+        self.posz = -10
+        
     def pickObjects(self,x,y):
         self.paintGL(1)
         array = (GLuint * 1)(0)
@@ -416,7 +445,7 @@ class LevelWidget(QGLWidget):
         glColor3f(0, 0, 1)
         glVertex3f(0, 0, 0)
         glVertex3f(0, 0, 10000)
-        glEnd()        
+        glEnd()
         for obj in self.objects:
             if obj == self.picked:
                 glColor3f(1.0,0.0,0.0)
@@ -434,8 +463,12 @@ class LevelWidget(QGLWidget):
         gluPerspective(45.0,float(w)/float(h),0.1,750.0)
         glMatrixMode(GL_MODELVIEW)
 
-    def initializeGL(self):  
-        glClearColor(0.3,0.3,1.0,0.0)      
+    def initializeGL(self):
+        if self.bgcolor is not None:
+            glClearColor(*self.bgcolor)
+        else:
+            glClearColor(0.3, 0.3, 0.3, 0.0)
+            QtWidgets.QMessageBox.information(self,'Default Background',"You have not chosen a background yet! If you want to use a custom background, go to Other > Change Background to change it. For now, we'll default you with one.")
         glDepthFunc(GL_LEQUAL)
         glEnable(GL_DEPTH_TEST)
         self.generateCubeList()  
@@ -453,11 +486,25 @@ class LevelWidget(QGLWidget):
 ##        self.objects.append(lobj)        
 
     # chain for loading models, they're seperated in the game for some reason
-    def loadModel(self,name):
+    def loadModel(self,newname):
+        
+        if self.inkGender == 1:
+            gen = 1
+        else:
+            gen = 0
+
+        if newname == 'StartPos' and gen == 1:
+            newname = 'Player01'
+        if newname == 'StartPos' and gen == 0:
+            newname = 'Player00'
+
+        name = ReplaceModel(newname, gen)
+        
         paths = ('/Model/',
                '/Pack/Obj/Model/',
                '/Pack/ObjSmall/Model/',
-               '/Pack/Enemy/Model/')
+               '/Pack/Enemy/Model/',
+               '/Pack/Player/Model/')
         
         for objpath in paths:
             base = window.gamePath + str(objpath) + str(name)
@@ -606,10 +653,13 @@ class LevelWidget(QGLWidget):
         self.updateGL()
 
 class ChooseLevelDialog(QtWidgets.QDialog):
-    def __init__(self,levelList):
+    stageName = ''
+    absolutePath = False
+    stageNamePath = ''
+
+    def __init__(self, levelList):
         QtWidgets.QDialog.__init__(self)
         self.setWindowTitle('Choose Stage')
-        self.currentLevel = None
 
         tree = QtWidgets.QTreeWidget()
         tree.setHeaderHidden(True)
@@ -619,16 +669,16 @@ class ChooseLevelDialog(QtWidgets.QDialog):
         nodes = []
         for level in levelList:
             levelNode = QtWidgets.QTreeWidgetItem()
-            levelNode.setData(0,QtCore.Qt.UserRole,level['MapFileName'])
-            darp = level['MapFileName']
-            levelNode.setText(0,levelName(darp) + ' (' + level['MapFileName'] + ')')
+            levelNode.setData(0, QtCore.Qt.UserRole, level['MapFileName'])
+            oldName = level['MapFileName']
+            levelNode.setText(0, levelName(oldName) + ' (' + level['MapFileName'] + ')')
             nodes.append(levelNode)
         tree.addTopLevelItems(nodes)
 
-        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
+        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
 
-        btn = self.buttonBox.addButton("Other file...",QtWidgets.QDialogButtonBox.ActionRole)
+        btn = self.buttonBox.addButton('Other file...', QtWidgets.QDialogButtonBox.ActionRole)
         btn.clicked.connect(self.openFile)
 
         self.buttonBox.accepted.connect(self.accept)
@@ -642,22 +692,32 @@ class ChooseLevelDialog(QtWidgets.QDialog):
         self.setMinimumWidth(340)
         self.setMinimumHeight(384)
 
+
     def openFile(self):
-        fn = QtWidgets.QFileDialog.getOpenFileName(self,'Open Level','Map','Level Archives (*.szs)')[0]
-        self.currentLevel = os.path.basename(str(fn))[:-4]
-        if self.currentLevel:
+        """
+        The user chose to open a specific file
+        """
+        fn = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Level', 'Map', 'Level Archives (*.szs)')[0]
+        self.stageName = fn
+        self.stageNamePath = os.path.basename(str(fn))[:-4]
+        print(self.stageName)
+        if self.stageName:
+            self.absolutePath = True
             self.accept()
 
-    def handleItemChange(self,current,previous):
-        self.currentLevel = str(current.data(0,QtCore.Qt.UserRole))
-        if not self.currentLevel:
-            self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
-        else:
-            self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(True)
+    def handleItemChange(self, current, previous):
+        """
+        The user single-clicked on a level name
+        """
+        self.stageName = str(current.data(0, QtCore.Qt.UserRole))
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(bool(self.stageName))
 
-    def handleItemActivated(self,item,column):
-        self.currentLevel = str(item.data(0,QtCore.Qt.UserRole))
-        if self.currentLevel:
+    def handleItemActivated(self, item, column):
+        """
+        The user double-clicked on a level name
+        """
+        self.stageName = str(item.data(0, QtCore.Qt.UserRole))
+        if self.stageName:
             self.accept()
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -684,6 +744,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings = SettingsWidget(self)
         self.setupGLScene()
         self.resizeWidgets()
+        
+        self.setupBG()
+        self.setupGender()
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.updateCamera)
@@ -711,7 +774,10 @@ class MainWindow(QtWidgets.QMainWindow):
         folder = QtWidgets.QFileDialog.getExistingDirectory(self,"Choose Game Path")
         if not self.isValidGameFolder(folder):
             return None
-        return folder
+        else:
+            QtWidgets.QMessageBox.information(self,'Success',"Game folder changed. You must restart the program for the changes to take effect.")
+            return folder
+
 
     def isValidGameFolder(self,folder):
         """
@@ -722,6 +788,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists(folder+'/Model'): return 0
         if not os.path.exists(folder+'/Pack/Obj'): return 0
         if not os.path.exists(folder+'/Pack/ObjSmall'): return 0
+        if not os.path.exists(folder+'/Pack/Player'): return 0
         if not os.path.exists(folder+'/Pack/Enemy'): return 0
         if not os.path.exists(folder+'/Pack/Static'): return 0
         if not os.path.exists(folder+'/Pack/Static/Mush'): return 0
@@ -747,17 +814,29 @@ class MainWindow(QtWidgets.QMainWindow):
         Loads the level choosing dialog, along with sending the level data to loadLevel()
         """        
         levelSelect = ChooseLevelDialog(self.levelList)
-        levelSelect.exec_()
-        print(self.gamePath + '/Pack/Static/Map/' + levelSelect.currentLevel + '.szs')
-        if os.path.isfile(self.gamePath + '/Pack/Static/Map/' + levelSelect.currentLevel + '.szs'):
-            with open(str(self.gamePath+'/Pack/Static/Map/'+levelSelect.currentLevel + '.szs'),'rb') as f:
-                data = f.read()
-            self.levelData = byml.BYML(sarc.extract(yaz0.decompress(data),levelSelect.currentLevel + '.byaml'))
-            self.loadLevel(self.levelData.rootNode)
-            self.setWindowTitle("Splat3D ALPHA v0.2 " + levelSelect.currentLevel + '.szs' + ' (' + levelName(levelSelect.currentLevel) + ')')
-        else:
-            return
+        if levelSelect.exec_():
+            if levelSelect.absolutePath:
+                path = levelSelect.stageName
+                name = levelSelect.stageNamePath
+                print('ok so path is ' + path)
+                print('and our name is ' + name)
+                custom = 1
+            else:
+                path = self.gamePath + '/Pack/Static/Map/' + levelSelect.stageName + '.szs'
+                custom = 0
 
+            if os.path.isfile(path):
+                with open(path, 'rb') as f:
+                    data = f.read()
+                if custom == 0:
+                    self.levelData = byml.BYML(sarc.extract(yaz0.decompress(data), levelSelect.stageName + '.byaml'))
+                    self.loadLevel(self.levelData.rootNode)
+                    self.setWindowTitle('Splat3D ALPHA v0.2 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName) + ')')                       
+                if custom == 1:
+                    self.levelData = byml.BYML(sarc.extract(yaz0.decompress(data), levelSelect.stageNamePath + '.byaml'))
+                    self.loadLevel(self.levelData.rootNode)
+                    self.setWindowTitle('Splat3D ALPHA v0.2 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')                 
+                
     def loadLevel(self,levelData):
         """
         Loads a level, specified by 1 argument which is the data from the BYAML, usually called from showLevelDialog()
@@ -802,6 +881,7 @@ class MainWindow(QtWidgets.QMainWindow):
         doneBox.setWindowTitle('Stage loaded')
         doneBox.setText("Stage is now loaded.")
         doneBox.exec_()
+        self.resetlevelAction.setEnabled(True)
         print('Loading time: ' + str(now()-stime))
 
     def loadObject(self,obj):
@@ -827,8 +907,33 @@ class MainWindow(QtWidgets.QMainWindow):
         Opens the param editor
         """        
         dlg = ParamWindow(self)
-        dlg.exec_()
+        dlg.exec_()  
 
+    def openInklingChooser(self):
+        """
+        Opens the inkling chooser
+        """        
+        dlg = ChooseInkling()
+        if dlg.exec_() != QtWidgets.QDialog.Accepted:
+            return
+        if dlg.maleButton.isChecked():
+            self.glWidget.inkGender = 1
+        if dlg.femaleButton.isChecked():
+            self.glWidget.inkGender = 0
+        self.qsettings.setValue('gender',self.glWidget.inkGender)
+
+    def openBGChooser(self):
+        """
+        Opens the bg color chooser
+        """        
+        color = QtWidgets.QColorDialog.getColor(QtCore.Qt.white, self, 'asdf')
+        if color is None: return
+     
+        self.glWidget.bgcolor = (color.red() / 255, color.green() / 255, color.blue() / 255, color.alpha() / 255)
+     
+        self.qsettings.setValue('bgcolor', self.glWidget.bgcolor)
+        QtWidgets.QMessageBox.information(self, 'Background Changed!', 'Background color changed. You must restart the program for the changes to take effect.')
+            
     # buttons n shortcuts
     def setupMenu(self):
         """
@@ -843,22 +948,37 @@ class MainWindow(QtWidgets.QMainWindow):
         self.saveAction.triggered.connect(self.saveLevel)
         self.saveAction.setEnabled(False)
 
-        #self.openparamAction = QtWidgets.QAction("Param Editor",self)
-        #self.openparamAction.setShortcut("Ctrl+P")
-        #self.openparamAction.triggered.connect(self.openParamEditor)       
+        self.resetcameraAction = QtWidgets.QAction("Reset Camera",self)
+        self.resetcameraAction.setShortcut("Ctrl+R")
+        self.resetcameraAction.triggered.connect(self.resetCamera)
+        self.resetlevelAction = QtWidgets.QAction("Reset Level",self)
+        self.resetlevelAction.setShortcut("Ctrl+T")
+        self.resetlevelAction.triggered.connect(self.resetLevel)
+        self.resetlevelAction.setEnabled(False)
 
         pathAction = QtWidgets.QAction("Change Game Path",self)
         pathAction.setShortcut("Ctrl+G")
         pathAction.triggered.connect(self.changeGamePath)
+
+        changeInkling = QtWidgets.QAction("Change Inkling",self)
+        changeInkling.setShortcut("CTRL+I")
+        changeInkling.triggered.connect(self.openInklingChooser)
+        changeBGColor = QtWidgets.QAction("Change Background",self)
+        changeBGColor.setShortcut("CTRL+B")
+        changeBGColor.triggered.connect(self.openBGChooser)        
         
         self.menubar = self.menuBar()
         fileMenu = self.menubar.addMenu("File")
         fileMenu.addAction(self.openAction)
         fileMenu.addAction(self.saveAction)
-        #toolMenu = self.menubar.addMenu("Tools")
-        #toolMenu.addAction(self.openparamAction)
+        toolMenu = self.menubar.addMenu("Tools")
+        toolMenu.addAction(self.resetcameraAction)
+        toolMenu.addAction(self.resetlevelAction)
         settingsMenu = self.menubar.addMenu("Settings")
-        settingsMenu.addAction(pathAction)    
+        settingsMenu.addAction(pathAction)
+        otherMenu = self.menubar.addMenu("Other")
+        otherMenu.addAction(changeInkling)
+        otherMenu.addAction(changeBGColor)
 
     def saveLevel(self):
         """
@@ -912,8 +1032,54 @@ class MainWindow(QtWidgets.QMainWindow):
         self.glWidget.posz += event.angleDelta().y() / 15
         self.glWidget.updateGL()
 
+    def resetCamera(self):        
+        self.glWidget.resetCamera()
+
+    def resetLevel(self):
+        self.glWidget.reset()
+
+    def setupGender(self):
+        self.glWidget.inkGender = self.qsettings.value('gender')
+
+    def setupBG(self):
+        self.glWidget.bgcolor = self.qsettings.value('bgcolor')           
+
+class ChooseInkling(QtWidgets.QDialog):
+    def __init__(self):
+        QtWidgets.QDialog.__init__(self)
+        self.setWindowTitle('Choose Inkling Gender')
+        #self.setWindowIcon(QtGui.QIcon('icon.png'))
+        #self.setIconSize(QtCore.QSize(16, 16))        
+        self.setGeometry(100,100,170,70)
+
+        layout = QtWidgets.QVBoxLayout()
+        self.label = QtWidgets.QLabel("Choose your Inkling gender!")       
+        self.maleButton = QtWidgets.QRadioButton("Male", self)
+        self.femaleButton = QtWidgets.QRadioButton("Female", self)
+
+        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)        
+        
+        self.label.move(10,10)
+        self.maleButton.move(10,10)
+        self.femaleButton.move(80,10)
+        self.maleButton.setChecked(False)
+        self.femaleButton.setChecked(True)
+        
+        layout.addWidget(self.label)
+        layout.addWidget(self.maleButton)
+        layout.addWidget(self.femaleButton)
+        layout.addWidget(self.buttonBox)
+        
+        self.genderButtons = QtWidgets.QButtonGroup()
+        self.genderButtons.addButton(self.maleButton)
+        self.genderButtons.addButton(self.femaleButton)
+
+        self.setLayout(layout)
+
 def main():
-    global window
+    global window   
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     sys.exit(app.exec_())

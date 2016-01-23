@@ -134,7 +134,7 @@ def objectName(oldobjectName):
         'ExplanationTextObj': 'Explanation Trigger',
         'SwitchAllDead': 'Extermination Switch',
 	'Fld_Crank00': 'Crank Map Field(old)',
-	'Obj_SighterTarget': 'Shoothing Range Target',
+	'Obj_SighterTarget': 'Shooting Range Target',
 	'Obj_BigNamazu': 'Big Zapfish',
 	'Obj_PlazaTrain': 'Plaza Train',
 	'Obj_PlazaAmiibo': 'Plaza Amiibo Case',
@@ -185,7 +185,7 @@ def objectName(oldobjectName):
 	'ExplanationTextObjLastBoss': 'Explanation Trigger(Boss)',
 	'Obj_Goal': 'Boss Goal',
 	'Enm_CylinderKing': 'Octonozzle(Boss)',
-	'Obj_Sphere': 'SP Currency',
+	'Obj_Sphere': 'Power Egg',
 	'Obj_AncientDocument': 'SP Scroll',
 	'Obj_TreeOrange': 'Orange Tree',
 	'Fld_World00': 'World Map Field',
@@ -199,35 +199,72 @@ def objectName(oldobjectName):
     return objs.get(oldobjectName, oldobjectName)
 
 def levelName(oldlevelName):
-    if oldlevelName.startswith('Test'):
-        return 'Test Level (UNUSED)'
-    if oldlevelName == 'Fld_Crank00_Vss':
-        return 'Urchin Underpass (VSS)'
-    if oldlevelName == 'Fld_Warehouse00_Vss':
-        return 'Walleye Warehouse (VSS)'
-    if oldlevelName == 'Fld_SeaPlant00_Vss':
-        return 'Saltspray Rig (VSS)'
-    if oldlevelName == 'Fld_UpDown00_Vss':
-        return 'Arowna Mall (VSS)'
-    if oldlevelName == 'Fld_SkatePark00_Vss':
-        return 'Blackbelly Skatepark (VSS)'
-    if oldlevelName == 'Fld_Athletic00_Vss':
-        return 'Camp Triggerfish (VSS)'
-    if oldlevelName == 'Fld_Amida00_Vss':
-        return 'Port Mackerel (VSS)'
-    if oldlevelName == 'Fld_Maze00_Vss':
-        return 'Kelp Dome (VSS)'
-    if oldlevelName == 'Fld_Tuzura00_Vss':
-        return 'Moray Towers (VSS)'
-    if oldlevelName == 'Fld_Ruins00_Vss':
-        return 'Bluefin Depot (VSS)'
-    if oldlevelName == 'Fld_ShootingRange_Shr':
-        return 'Shooting Range'
-    if oldlevelName == 'Fld_Tutorial00_Ttr':
-        return 'Tutorial Stage'
-    if oldlevelName == 'Fld_World00_Wld':
-        return 'Octovalley Map'
-    if oldlevelName == 'Fld_Plaza00_Plz':
-        return 'Inkopolis'
+    maps = {    
+        'Fld_Crank00_Vss': 'Urchin Underpass (VSS)',
+        'Fld_Warehouse00_Vss': 'Walleye Warehouse (VSS)',
+        'Fld_SeaPlant00_Vss': 'Saltspray Rig (VSS)',
+        'Fld_UpDown00_Vss': 'Arowna Mall (VSS)',
+        'Fld_SkatePark00_Vss': 'Blackbelly Skatepark (VSS)',
+        'Fld_Athletic00_Vss': 'Camp Triggerfish (VSS)',
+        'Fld_Amida00_Vss': 'Port Mackerel (VSS)',
+        'Fld_Maze00_Vss': 'Kelp Dome (VSS)',
+        'Fld_Tuzura00_Vss': 'Moray Towers (VSS)',
+        'Fld_Ruins00_Vss': 'Bluefin Depot (VSS)',
+        'Fld_ShootingRange_Shr': 'Shooting Range',
+        'Fld_Office00_Vss': 'Ancho-V Games (VSS)',
+        'Fld_Quarry00_Vss': 'Piranha Pit (VSS)',
+        'Fld_Jyoheki00_Vss': 'Flounder Heights (VSS)',
+        'Fld_Pivot00_Vss': 'Museum D\'Alfonsino (VSS)',
+        'Fld_Hiagari00_Vss': 'Mahi-Mahi Resort (VSS)',
+        'Fld_Kaisou00_Vss': 'Hammerhead Bridge (VSS)',
+        'Fld_Crank00_Dul': 'Urchin Underpass (Dojo)',
+        'Fld_Warehouse00_Dul': 'Walleye Warehouse (Dojo)',
+        'Fld_SeaPlant00_Dul': 'Saltspray Rig (Dojo)',
+        'Fld_UpDown00_Dul': 'Arowna Mall (Dojo)',
+        'Fld_SkatePark00_Dul': 'Blackbelly Skatepark (Dojo)',
+        'Fld_Tutorial00_Ttr': 'Tutorial Stage',
+        'Fld_TutorialShow00_Ttr': 'Tutorial Duplicate...?',
+        'Fld_World00_Wld': 'Octovalley Map',
+        'Fld_Plaza00_Plz': 'Inkopolis',
+        'Fld_EasyHide00_Msn': 'Octotrooper Hideout',
+        'Fld_EasyClimb00_Msn': 'Lair of the Octoballs',
+        'Fld_EasyJump00_Msn': 'Rise of the Octoscopers',
+        'Fld_Geyser00_Msn': 'Gusher Gauntlet',
+        'Fld_Sponge00_Msn': 'Floating Sponge Garden',
+        'Fld_Propeller00_Msn': 'Propeller Lift Playground',
+        'Fld_PaintingLift00_Msn': 'Spreader Splatfest',
+        'Fld_RvlMaze00_Msn': 'Octoling Invasion',
+        'Fld_OctZero00_Msn': 'Unidentified Flying Object',
+        'Fld_InkRail00_Msn': 'Inkrail Skyscape',
+        'Fld_Invisible00_Msn': 'Inkvisible Avenues',
+        'Fld_Dozer00_Msn': 'Flooder Junkyard',
+        'Fld_SlideLift00_Msn': 'Shifting Splatforms',
+        'Fld_RvlSkatePark00_Msn': 'Octoling Assault',
+        'Fld_OctRuins00_Msn': 'Undeniable Flying Object',
+        'Fld_Propeller01_Msn': 'Propeller-Lift Fortress',
+        'Fld_Charge00_Msn': 'Octosniper Ramparts',
+        'Fld_PaintingLift01_Msn': 'Spinning Spreaders',
+        'Fld_TurnLift00_Msn': 'Tumbling Splatforms',
+        'Fld_RvlRuins00_Msn': 'Octoling Uprising',
+        'Fld_OctCrank00_Msn': 'Undeniable Flying Object',
+        'Fld_Trance00_Msn': 'Splat-Switch Revolution',
+        'Fld_Sponge01_Msn': 'Spongy Observatory',
+        'Fld_Fusya00_Msn': 'Pinwheel Power Plant',
+        'Fld_Dozer01_Msn': 'Far-Flung Flooders',
+        'Fld_RvlSeaPlant00_Msn': 'Octoling Onslaught',
+        'Fld_OctSkatePark00_Msn': 'Unavoidable Flying Object',
+        'Fld_BossStampKing_Bos_Msn': 'The Mighty Octostamp!',
+        'Fld_BossCylinderKing_Bos_Msn': 'The Dreaded Octonozzle!',
+        'Fld_BossBallKing_Bos_Msn': 'The Rampaging Octowhirl!',
+        'Fld_BossMouthKing_Bos_Msn': 'The Ravenous Octomaw!',
+        'Fld_BossRailKing_Bos_Msn': 'Enter the Octobot King!',
+    }
 
-    return oldlevelName
+    return maps.get(oldlevelName, oldlevelName)
+
+def ReplaceModel(objName, gen):
+    models = {
+        'Enm_Rival00': 'Rival00',
+        'RespawnPos': 'Obj_RespawnPlatform',
+        }     
+    return models.get(objName, objName)
