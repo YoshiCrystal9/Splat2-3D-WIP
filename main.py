@@ -112,6 +112,21 @@ class FloatBoxEdit(QtWidgets.QDoubleSpinBox):
     def changedValue(self, value):
         self.callback(self)
 
+class IntBoxEdit(QtWidgets.QSpinBox):
+    """
+    Class for a QSpinBox, for ints and various values
+    """
+    def __init__(self, value, callback):
+        super().__init__()
+        self.setSingleStep(1)
+        self.setRange(-99999999, 999999999)
+        self.setValue(value)
+        self.callback = callback
+        self.valueChanged.connect(self.changedValue)
+
+    def changedValue(self, value):
+        self.callback(self)
+
 class LineEdit(QtWidgets.QLineEdit):
     """
     A simple QLineEdit widget for editing a value, such as a string.
@@ -136,8 +151,7 @@ def IntEdit(v,cb):
     """
     Returns an edit for an integer
     """
-    edit = LineEdit(v,cb)
-    edit.setValidator(QtGui.QIntValidator())
+    edit = IntBoxEdit(v,cb)
     return edit
 
 class SettingsWidget(QtWidgets.QWidget):
