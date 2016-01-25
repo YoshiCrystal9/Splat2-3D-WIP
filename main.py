@@ -43,14 +43,13 @@ if currentRunningVersion < minimumVer:
 # PyQt5 import checker
 try:
     from PyQt5 import QtWidgets, QtCore, QtWidgets, QtGui
-    from PyQt5.QtOpenGL import *
+    from PyQt5.QtOpenGL import QGLWidget
 except (ImportError, NameError):
     errormsg = 'PyQt5 is not installed for this Python installation. Go online and download it.'
     raise Exception(errormsg)
 
 try:
-    from OpenGL.GL import *
-    from OpenGL.GLU import *
+    from OpenGL import GL, GLU
 except (ImportError, NameError):
     errormsg = 'PyOpenGL 3.0.1 is not installed for this Python installation. Go online and download it. (or use pip install PyOpenGL)'
     raise Exception(errormsg)
@@ -365,15 +364,15 @@ class LevelObject:
 
     def draw(self,pick):
         if pick:
-            glColor3f(*self.color)
-        glPushMatrix()
-        glTranslatef(self.posx,self.posy,self.posz)
-        glRotatef(self.rotx,1.0,0.0,0.0)
-        glRotatef(self.roty,0.0,1.0,0.0)
-        glRotatef(self.rotz,0.0,0.0,1.0)
+            GL.glColor3f(*self.color)
+        GL.glPushMatrix()
+        GL.glTranslatef(self.posx,self.posy,self.posz)
+        GL.glRotatef(self.rotx,1.0,0.0,0.0)
+        GL.glRotatef(self.roty,0.0,1.0,0.0)
+        GL.glRotatef(self.rotz,0.0,0.0,1.0)
         #glScalef(self.sclx,self.scly,self.sclz)
-        glCallList(self.list)
-        glPopMatrix()
+        GL.glCallList(self.list)
+        GL.glPopMatrix()
 
     def updateModel(self):
         model = self.data['ModelName']
@@ -422,8 +421,8 @@ class LevelWidget(QGLWidget):
         
     def pickObjects(self,x,y):
         self.paintGL(1)
-        array = (GLuint * 1)(0)
-        pixel = glReadPixels(x,self.height()-y,1,1,GL_RGB,GL_UNSIGNED_BYTE,array)
+        array = (GL.GLuint * 1)(0)
+        pixel = GL.glReadPixels(x,self.height()-y,1,1,GL.GL_RGB,GL.GL_UNSIGNED_BYTE,array)
         r,g,b = [round(((array[0]>>(i*8))&0xFF)/255.0,1) for i in range(3)]
         if debugMode == 1:
             print("R " + str(r))
@@ -442,49 +441,49 @@ class LevelWidget(QGLWidget):
         self.updateGL()
         
     def paintGL(self,pick=0):
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glLoadIdentity()         
-        glTranslatef(self.posx,self.posy,self.posz)
-        glRotatef(self.rotx,1.0,0.0,0.0)
-        glRotatef(self.roty,0.0,1.0,0.0)
-        glRotatef(self.rotz,0.0,0.0,1.0)
-        glBegin(GL_LINES)
-        glColor3f(0.0,0.0,0.0)
-        glColor3f(1, 0, 0)
-        glVertex3f(0, 0, 0)
-        glVertex3f(10000, 0, 0)
-        glColor3f(0, 1, 0)
-        glVertex3f(0, 0, 0)
-        glVertex3f(0, 10000, 0)
-        glColor3f(0, 0, 1)
-        glVertex3f(0, 0, 0)
-        glVertex3f(0, 0, 10000)
-        glEnd()
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+        GL.glLoadIdentity()         
+        GL.glTranslatef(self.posx,self.posy,self.posz)
+        GL.glRotatef(self.rotx,1.0,0.0,0.0)
+        GL.glRotatef(self.roty,0.0,1.0,0.0)
+        GL.glRotatef(self.rotz,0.0,0.0,1.0)
+        GL.glBegin(GL.GL_LINES)
+        GL.glColor3f(0.0,0.0,0.0)
+        GL.glColor3f(1, 0, 0)
+        GL.glVertex3f(0, 0, 0)
+        GL.glVertex3f(10000, 0, 0)
+        GL.glColor3f(0, 1, 0)
+        GL.glVertex3f(0, 0, 0)
+        GL.glVertex3f(0, 10000, 0)
+        GL.glColor3f(0, 0, 1)
+        GL.glVertex3f(0, 0, 0)
+        GL.glVertex3f(0, 0, 10000)
+        GL.glEnd()
         for obj in self.objects:
             if obj == self.picked:
-                glColor3f(1.0,0.0,0.0)
+                GL.glColor3f(1.0,0.0,0.0)
             else:
-                glColor3f(1.0,1.0,1.0)
+                GL.glColor3f(1.0,1.0,1.0)
             obj.draw(pick)
 
     def resizeGL(self,w,h):
         if h == 0:
             h = 1
             
-        glViewport(0,0,w,h)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluPerspective(45.0,float(w)/float(h),0.1,750.0)
-        glMatrixMode(GL_MODELVIEW)
+        GL.glViewport(0,0,w,h)
+        GL.glMatrixMode(GL.GL_PROJECTION)
+        GL.glLoadIdentity()
+        GLU.gluPerspective(45.0,float(w)/float(h),0.1,750.0)
+        GL.glMatrixMode(GL.GL_MODELVIEW)
 
     def initializeGL(self):
         if self.bgcolor is not None:
-            glClearColor(*self.bgcolor)
+            GL.glClearColor(*self.bgcolor)
         else:
-            glClearColor(0.3, 0.3, 0.3, 0.0)
+            GL.glClearColor(0.3, 0.3, 0.3, 0.0)
             QtWidgets.QMessageBox.information(self,'Default Background',"You have not chosen a background yet! If you want to use a custom background, go to Other > Change Background to change it. For now, we'll default you with one.")
-        glDepthFunc(GL_LEQUAL)
-        glEnable(GL_DEPTH_TEST)
+        GL.glDepthFunc(GL.GL_LEQUAL)
+        GL.glEnable(GL.GL_DEPTH_TEST)
         self.generateCubeList()  
 
     def addObject(self,obj,modelName):
@@ -560,8 +559,8 @@ class LevelWidget(QGLWidget):
             return self.cubeList         
 
     def generateList(self,model):
-        displayList = glGenLists(1)
-        glNewList(displayList,GL_COMPILE)
+        displayList = GL.glGenLists(1)
+        GL.glNewList(displayList,GL.GL_COMPILE)
 
         for polygon in model.shapes:
 
@@ -569,77 +568,77 @@ class LevelWidget(QGLWidget):
             triangles = polygon.indices
             vertices = polygon.vertices
             
-            glPushMatrix()
-            glRotatef(rotation[0],1.0,0.0,0.0)
-            glRotatef(rotation[1],0.0,1.0,0.0)
-            glRotatef(rotation[2],0.0,0.0,1.0)
+            GL.glPushMatrix()
+            GL.glRotatef(rotation[0],1.0,0.0,0.0)
+            GL.glRotatef(rotation[1],0.0,1.0,0.0)
+            GL.glRotatef(rotation[2],0.0,0.0,1.0)
 
-            glBegin(GL_TRIANGLES)
+            GL.glBegin(GL.GL_TRIANGLES)
             for vertex in triangles:
-                glVertex3f(*[vertices[vertex][i]/100 for i in range(3)])
-            glEnd()
+                GL.glVertex3f(*[vertices[vertex][i]/100 for i in range(3)])
+            GL.glEnd()
 
-            glPushAttrib(GL_CURRENT_BIT)
-            glColor3f(0.0,0.0,0.0)
+            GL.glPushAttrib(GL.GL_CURRENT_BIT)
+            GL.glColor3f(0.0,0.0,0.0)
             for triangle in [triangles[i*3:i*3+3] for i in range(len(triangles)//3)]:
-                glBegin(GL_LINES)
+                GL.glBegin(GL.GL_LINES)
                 for vertex in triangle:
-                    glVertex3f(*[vertices[vertex][i]/100 for i in range(3)])
-                glEnd()
-            glPopAttrib()
+                    GL.glVertex3f(*[vertices[vertex][i]/100 for i in range(3)])
+                GL.glEnd()
+            GL.glPopAttrib()
 
-            glPopMatrix()
+            GL.glPopMatrix()
         
-        glEndList()
+        GL.glEndList()
         return displayList
 
     def generateCubeList(self):
-        displayList = glGenLists(1)
-        glNewList(displayList,GL_COMPILE)
+        displayList = GL.glGenLists(1)
+        GL.glNewList(displayList,GL.GL_COMPILE)
 
-        glBegin(GL_QUADS)
+        GL.glBegin(GL.GL_QUADS)
         self.drawCube()
-        glEnd()
+        GL.glEnd()
 
-        glBegin(GL_LINES)
-        glColor3f(0.0,0.0,0.0)
+        GL.glBegin(GL.GL_LINES)
+        GL.glColor3f(0.0,0.0,0.0)
         self.drawCube()
-        glEnd()
+        GL.glEnd()
 
-        glEndList()
+        GL.glEndList()
 
         self.cubeList = displayList     
 
     def drawCube(self):
-        glVertex3f( 0.3, 0.3,-0.3)
-        glVertex3f(-0.3, 0.3,-0.3)
-        glVertex3f(-0.3, 0.3, 0.3)
-        glVertex3f( 0.3, 0.3, 0.3)
+        GL.glVertex3f( 0.3, 0.3,-0.3)
+        GL.glVertex3f(-0.3, 0.3,-0.3)
+        GL.glVertex3f(-0.3, 0.3, 0.3)
+        GL.glVertex3f( 0.3, 0.3, 0.3)
 
-        glVertex3f( 0.3,-0.3, 0.3)
-        glVertex3f(-0.3,-0.3, 0.3)
-        glVertex3f(-0.3,-0.3,-0.3)
-        glVertex3f( 0.3,-0.3,-0.3)
+        GL.glVertex3f( 0.3,-0.3, 0.3)
+        GL.glVertex3f(-0.3,-0.3, 0.3)
+        GL.glVertex3f(-0.3,-0.3,-0.3)
+        GL.glVertex3f( 0.3,-0.3,-0.3)
         
-        glVertex3f( 0.3, 0.3, 0.3)
-        glVertex3f(-0.3, 0.3, 0.3)
-        glVertex3f(-0.3,-0.3, 0.3)
-        glVertex3f( 0.3,-0.3, 0.3)
+        GL.glVertex3f( 0.3, 0.3, 0.3)
+        GL.glVertex3f(-0.3, 0.3, 0.3)
+        GL.glVertex3f(-0.3,-0.3, 0.3)
+        GL.glVertex3f( 0.3,-0.3, 0.3)
 
-        glVertex3f( 0.3,-0.3,-0.3)
-        glVertex3f(-0.3,-0.3,-0.3)
-        glVertex3f(-0.3, 0.3,-0.3)
-        glVertex3f( 0.3, 0.3,-0.3)
+        GL.glVertex3f( 0.3,-0.3,-0.3)
+        GL.glVertex3f(-0.3,-0.3,-0.3)
+        GL.glVertex3f(-0.3, 0.3,-0.3)
+        GL.glVertex3f( 0.3, 0.3,-0.3)
         
-        glVertex3f(-0.3, 0.3, 0.3)
-        glVertex3f(-0.3, 0.3,-0.3)
-        glVertex3f(-0.3,-0.3,-0.3)
-        glVertex3f(-0.3,-0.3, 0.3)
+        GL.glVertex3f(-0.3, 0.3, 0.3)
+        GL.glVertex3f(-0.3, 0.3,-0.3)
+        GL.glVertex3f(-0.3,-0.3,-0.3)
+        GL.glVertex3f(-0.3,-0.3, 0.3)
         
-        glVertex3f( 0.3, 0.3,-0.3)
-        glVertex3f( 0.3, 0.3, 0.3)
-        glVertex3f( 0.3,-0.3, 0.3)
-        glVertex3f( 0.3,-0.3,-0.3)
+        GL.glVertex3f( 0.3, 0.3,-0.3)
+        GL.glVertex3f( 0.3, 0.3, 0.3)
+        GL.glVertex3f( 0.3,-0.3, 0.3)
+        GL.glVertex3f( 0.3,-0.3,-0.3)
     
     mousex = mousey = 0
     def mousePressEvent(self,event):
