@@ -61,8 +61,6 @@ except (AttributeError):
     pass
 
 import os, random
-from PIL import Image
-
 from names import description, levelName, objectName, SettingName, ReplaceModel
 import byml, fmdl, inkling, preseteditor, sarc, yaz0
 
