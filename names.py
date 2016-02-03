@@ -102,6 +102,7 @@ def description(confName):
 	'Obj_RailKingPilotHouse': 'The glass bowl DJ Octavio \ncan be seen in after beating \n the singleplayer.',
 	'Obj_PlazaIdolSpeakerA': 'A speaker that can be \nseen on the plaza while \na splatfest is running.',
 	'Obj_PlazaIdolSpeakerB': 'A speaker that can be \nseen on the plaza while \na splatfest is running.',
+        'Obj_OfficeSaku': '柵 (Saku) is a fence.',
         }
     return descs.get(confName, confName)
         
@@ -195,6 +196,17 @@ def objectName(oldobjectName):
 	'Obj_RailKingPilotHouse': 'Octavio glass bowl',
 	'Obj_PlazaIdolSpeakerA': 'Splatfest Speaker A',
 	'Obj_PlazaIdolSpeakerB': 'Splatfest Speaker B',
+        'Npc_IdolA': 'Callie NPC',
+        'Npc_IdolB': 'Marie NPC',
+        'NpcPlaza': 'Inkling NPC',
+        'Npc_Judge': 'Judd NPC',
+        'NpccustomShop': 'Spike NPC',
+        'NpcSpawnPos': 'Inkling Spawn',
+        'Obj_PreFestPost': 'Splatfest Voting Booth',
+        'Obj_GateManhole': 'Octovalley Entrance',
+        'Obj_PlazaIdolChairA': 'Callie (Sitting)',
+        'Obj_PlazaIdolChairB': 'Marie (Sitting)',
+        'Obj_OfficeSaku': 'Office Fence',
         }
     return objs.get(oldobjectName, oldobjectName)
 
