@@ -25,8 +25,7 @@ The views and conclusions contained in the software and documentation
 are those of the authors and should not be interpreted as representing
 official policies, either expressed or implied, of Yannik Marchand.
 """
-import splat
-import os
+import os, struct
 from PyQt5 import QtWidgets, QtCore, QtWidgets, QtGui
 
 class PresetEditor(QtWidgets.QDialog):
@@ -34,38 +33,50 @@ class PresetEditor(QtWidgets.QDialog):
         QtWidgets.QDialog.__init__(self)
         self.setWindowTitle('Inkopolis Preset Editor') 
         self.setGeometry(100,100,500,500)
-        ChooserWidget(self)
 
-    def parseBIN(self):
-        pass
-    
-class ChooserWidget(QtWidgets.QWidget): 
-    def __init__(self,parent):
-        QtWidgets.QWidget.__init__(self,parent)
+        openAction = QtWidgets.QAction('Open', self)        
+        openAction.setShortcut('Ctrl+O')
+        openAction.setStatusTip('Open Bin')
+        openAction.triggered.connect(self.openBin)
 
-        tree = QtWidgets.QTreeWidget()
-        tree.setHeaderHidden(True)
-        tree.currentItemChanged.connect(self.handleItemChange)
-        tree.itemActivated.connect(self.handleItemActivated)
+        menubar = QtWidgets.QMenuBar()
+        fileMenu = menubar.addMenu('File')
+        fileMenu.addAction(openAction)
+
+        self.nameEdit = QtWidgets.QLineEdit()
+        self.nameEdit.setMaxLength(21)
+        self.nameEdit.setMaximumWidth(120)
+
+        self.unk1Edit = QtWidgets.QSpinBox()
+        self.unk1Edit.setSingleStep(1)
+        self.unk1Edit.setRange(-99999999, 999999999)
         
-        files = []
-        path = r"C:\Users\Joshua\WiiU\nus_content\0005000E10176900\160Broke\content\Pack\Static\Etc\PlayerInfo\\"
-        for name in os.listdir(path):
-            if os.path.isfile(os.path.join(path, name)):
-                files.append(name)
-                presetBin = QtWidgets.QTreeWidgetItem()
-                presetBin.setData(0, QtCore.Qt.UserRole, path)
-                presetBin.setText(0, name)
-                files.append(presetBin)
-        tree.addTopLevelItems(files)
-        
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(tree)
-        self.setLayout(layout)
+        layout = QtWidgets.QFormLayout(self)
+        layout.addWidget(menubar)
+        layout.addRow('Inkling Name:', self.nameEdit)
+        layout.addRow('Unknown 0x37:', self.unk1Edit)
 
-    def handleItemChange(self):
-        pass
+    def parseBin(self, data):
+        offset = 0x06
+        binstruct = struct.Struct('>42s4xI')
 
-    def handleItemActivated(self):
-        pass
+        bindata = binstruct.unpack_from(data, offset)
 
+        namereg, unk1 = bindata
+
+        self.name = namereg.decode('utf-16be')
+
+        self.nameEdit.setText(self.name)
+        self.unk1Edit.setValue(unk1)
+
+    def openBin(self):
+        fn = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Preset', 'derp', 'Binary files (*.bin)')[0]
+        with open(fn, 'rb') as f:
+            data = f.read()
+            if data[:6] != b'\xFF\xFF\xFF\xFF\x01\xEF':
+                invalidBinBox = QtWidgets.QMessageBox()
+                invalidBinBox.setWindowTitle('Invalid File')
+                invalidBinBox.setText("The BIN file you have tried to load is invalid.")
+                invalidBinBox.exec_()
+            else:
+                self.parseBin(data)

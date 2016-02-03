@@ -322,12 +322,15 @@ class MainWindow(QtWidgets.QMainWindow):
         changeBGColor = QtWidgets.QAction("Change Background",self)
         changeBGColor.setShortcut("CTRL+B")
         changeBGColor.triggered.connect(self.openBGChooser)        
+        changePreset = QtWidgets.QAction("Preset Editor",self)
+        changePreset.setShortcut("CTRL+P")
+        changePreset.triggered.connect(self.openPresetEditor)
         
         menubar = self.menuBar()
         fileMenu = menubar.addMenu("File").addActions([openAction, self.saveAction])
         toolMenu = menubar.addMenu("Tools").addActions([resetCamera, self.resetlevelAction])
         settingsMenu = menubar.addMenu("Settings").addAction(pathAction)
-        otherMenu = menubar.addMenu("Other").addActions([changeInkling, changeBGColor])
+        otherMenu = menubar.addMenu("Other").addActions([changeInkling, changeBGColor, changePreset])
 
     def saveLevel(self):
         """
