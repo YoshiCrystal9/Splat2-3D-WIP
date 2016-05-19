@@ -110,8 +110,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if path:
             self.qsettings.setValue('gamePath',path)
         else:
-            if disable:
-                self.openAction.setEnabled(False)
+            # the lines here weren't quite needed, because it is discarded otherwise
             QtWidgets.QMessageBox.warning(self,"Incomplete Folder","The folder you chose doesn't seem to contain the required files.")
 
     def askGamePath(self):
@@ -529,17 +528,20 @@ class SettingsWidget(QtWidgets.QWidget):
 
     def changed(self,box):
         if self.transx.text() and self.transy.text() and self.transz.text() and self.rotx.text() and self.roty.text() and self.rotz.text() and self.sclx.text() and self.scly.text() and self.sclz.text():
-            self.current.posx = float(self.transx.text())
-            self.current.posy = float(self.transy.text())
-            self.current.posz = float(self.transz.text())
-            self.current.rotx = float(self.rotx.text())
-            self.current.roty = float(self.roty.text())
-            self.current.rotz = float(self.rotz.text())
-            self.current.sclx = float(self.sclx.text())
-            self.current.scly = float(self.scly.text())
-            self.current.sclz = float(self.sclz.text())
-            self.current.saveValues()
-            window.glWidget.updateGL()
+            try:
+                self.current.posx = float(self.transx.text().replace(',', '.'))
+                self.current.posy = float(self.transy.text().replace(',', '.'))
+                self.current.posz = float(self.transz.text().replace(',', '.'))
+                self.current.rotx = float(self.rotx.text().replace(',', '.'))
+                self.current.roty = float(self.roty.text().replace(',', '.'))        
+                self.current.rotz = float(self.rotz.text().replace(',', '.'))
+                self.current.sclx = float(self.sclx.text().replace(',', '.'))
+                self.current.scly = float(self.scly.text().replace(',', '.'))
+                self.current.sclz = float(self.sclz.text().replace(',', '.'))
+                self.current.saveValues()
+                window.glWidget.updateGL()
+            except:
+                print("Please enter a valid float")
 
     def changed2(self,box):
         if box.text():
