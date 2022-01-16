@@ -18,6 +18,8 @@ PyOpenGL Download: https://pypi.python.org/pypi/PyOpenGL/3.1.0
 
 PyQt5 Download: https://sourceforge.net/projects/pyqt/files/PyQt5/PyQt-5.5.1/PyQt5-5.5.1-gpl-Py3.4-Qt5.5.1-x32.exe/download
 
+https://github.com/zeldamods/byml-v2
+
 Use 1 of the 2 links at the bottom to install. 
 
 32-bit Python is *mostly* required, due to the PyOpenGL depency. 
