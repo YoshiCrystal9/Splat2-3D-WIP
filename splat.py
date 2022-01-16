@@ -167,18 +167,18 @@ class MainWindow(QtWidgets.QMainWindow):
                 print('and our name is ' + name)
                 custom = 1
             else:
-                path = self.gamePath + '/Map/' + levelSelect.stageName + '.szs'
+                path = self.gamePath + '/Map' + levelSelect.stageName + '.szs'
                 custom = 0
 
             if os.path.isfile(path):
                 with open(path, 'rb') as f:
                     data = f.read()
                 if custom == 0:
-                    self.levelData = byml.BYML(sarc.extract(yaz0.decompress(data), levelSelect.stageName + '.byaml'))
+                    self.levelData = byml.Byml(sarc.extract(yaz0.decompress(data), levelSelect.stageName + '.byaml'))
                     self.loadLevel(self.levelData.rootNode)
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName) + ')')                       
                 if custom == 1:
-                    self.levelData = byml.BYML(sarc.extract(yaz0.decompress(data), levelSelect.stageNamePath + '.byaml'))
+                    self.levelData = byml.Byml(sarc.extract(yaz0.decompress(data), levelSelect.stageNamePath + '.byaml'))
                     self.loadLevel(self.levelData.rootNode)
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')                 
                 
