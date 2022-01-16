@@ -167,7 +167,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 print('and our name is ' + name)
                 custom = 1
             else:
-                path = self.gamePath + '/Pack/Map/' + levelSelect.stageName + '.szs'
+                path = self.gamePath + '/Map/' + levelSelect.stageName + '.szs'
                 custom = 0
 
             if os.path.isfile(path):
