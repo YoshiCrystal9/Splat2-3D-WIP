@@ -207,7 +207,7 @@ class ArrayNode:
 class BYML:
     def __init__(self,data):
         self.data = data
-        assert data[:2] == b'BY'
+        assert data[:2] == b'YB'
         self.offs1 = UI32(data,4)
         self.offs2 = UI32(data,8)
         self.offs3 = UI32(data,12)

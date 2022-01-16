@@ -133,9 +133,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if not folder: return 0
         if not os.path.exists(folder+'/Pack'): return 0
         if not os.path.exists(folder+'/Model'): return 0
-        if not os.path.exists(folder+'/Pack/Map'): return 0
-        if not os.path.exists(folder+'/Pack/Mush.release'): return 0
-        if not os.path.exists(folder+'/Pack/Param'): return 0   
+        if not os.path.exists(folder+'/Pack/Map.pack'): return 0
+        if not os.path.exists(folder+'/Pack/Mush.release.pack'): return 0
+        if not os.path.exists(folder+'/Pack/Param.pack'): return 0   
         return 1
 
     # luckily Splatoon has a MapInfo.byaml to load stuff in....
@@ -143,7 +143,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Loads MapInfo.release.byaml, to get the list of levels for the level choosing dialog
         """        
-        with open(self.gamePath+'/Pack/Mush.release/Mush/MapInfo.release.byaml','rb') as f:
+        with open(self.gamePath+'/Pack/Mush.release.packe/Mush/MapInfo.release.byml','rb') as f:
             data = f.read()
             
         # no need to compress or anything, it's as-is
