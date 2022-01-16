@@ -26,7 +26,7 @@ are those of the authors and should not be interpreted as representing
 official policies, either expressed or implied, of Yannik Marchand.
 """
 # make this 1 to enable a lot more info printed on the console
-debugMode = 0
+debugMode = 1
 
 if debugMode == 1:
     print('Starting in debug mode...')
@@ -141,9 +141,9 @@ class MainWindow(QtWidgets.QMainWindow):
     # luckily Splatoon has a MapInfo.byaml to load stuff in....
     def loadStageList(self):
         """
-        Loads MapInfo.byaml, to get the list of levels for the level choosing dialog
+        Loads MapInfo.release.byaml, to get the list of levels for the level choosing dialog
         """        
-        with open(self.gamePath+'\Pack\Mush.release\Mush\MapInfo.byaml','rb') as f:
+        with open(self.gamePath+'/Pack/Mush.release/Mush/MapInfo.release.byaml','rb') as f:
             data = f.read()
             
         # no need to compress or anything, it's as-is
