@@ -147,7 +147,7 @@ class MainWindow(QtWidgets.QMainWindow):
             data = f.read()
             
         # no need to compress or anything, it's as-is
-        self.levelList = byml.BYML(data).rootNode
+        # self.levelList = byml.BYML(data).rootNode SEE WHAT TO DO WITH THIS LOL HELP
         
     # Splatoon stores it's levels in /Pack/Map/____.szs/____.byaml so it's double layered
     # looks like we have to double the decompression and extraction

@@ -1,258 +1,424 @@
-"""
-Copyright (C) 2015-2016 Kinnay, MrRean, RoadrunnerWMC
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY Yannik Marchand ''AS IS'' AND ANY
-EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL Yannik Marchand BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The views and conclusions contained in the software and documentation 
-are those of the authors and should not be interpreted as representing
-official policies, either expressed or implied, of Yannik Marchand.
-"""
-
+# Copyright 2018 leoetlino <leo@leolam.fr>
+# Licensed under GPLv2+
+from enum import IntEnum
+from sortedcontainers import SortedDict # type: ignore
+import io
 import struct
+import typing
 
-def String(data,offs):
-    return data[offs:].split(b'\0')[0].decode('shift-jis')
+class NodeType(IntEnum):
+    STRING = 0xa0
+    ARRAY = 0xc0
+    HASH = 0xc1
+    STRING_TABLE = 0xc2
+    BOOL = 0xd0
+    INT = 0xd1
+    FLOAT = 0xd2
+    UINT = 0xd3
+    INT64 = 0xd4
+    UINT64 = 0xd5
+    DOUBLE = 0xd6
+    NULL = 0xff
 
-def UI24(data,offs):
-    return struct.unpack('>I',b'\x00'+data[offs:offs+3])[0]
+_NUL_CHAR = b'\x00'
 
-def UI32(data,offs):
-    return struct.unpack_from('>I',data,offs)[0]
+def _get_unpack_endian_character(big_endian: bool):
+    return '>' if big_endian else '<'
 
-class ValueNode:
-    def __init__(self,v,offs,byml):
-        self.val = v
-        self.offs = offs
-        self.byml = byml
+def _align_up(value: int, size: int) -> int:
+    return value + (size - value % size) % size
 
-    def __str__(self):
-        return str(self.val)
+def _is_container_type(node_type: int) -> bool:
+    return node_type == NodeType.ARRAY or node_type == NodeType.HASH
 
-    def parse(self):
-        pass
+def _is_value_type(node_type: NodeType) -> bool:
+    return node_type == NodeType.STRING or (NodeType.BOOL <= node_type <= NodeType.UINT) or node_type == NodeType.NULL
 
-class StringNode(ValueNode):
-    def changeValue(self,val):
-        self.val = str(val)
-        self.byml.stringChanged(self)
-
-class BooleanNode(ValueNode):
-    def changeValue(self,val):
-        self.val = bool(val)
-        bchar = b'\x01' if self.val else b'\x00'
-        self.byml.data = self.byml.data[:self.offs]+bchar+self.byml.data[self.offs+1:]
-
-class IntegerNode(ValueNode):
-    def changeValue(self,val):
-        self.val = int(val)
-        self.byml.data = self.byml.data[:self.offs]+struct.pack('>i',self.val)+self.byml.data[self.offs+4:]
-
-class FloatNode(ValueNode):
-    def changeValue(self,val):
-        self.val = float(val)
-        self.byml.data = self.byml.data[:self.offs]+struct.pack('>f',self.val)+self.byml.data[self.offs+4:]
-
-class NoneNode(ValueNode):
+# Nintendo uses uint nodes for some crc32 hashes. The problem is that they seem to be using
+# uints randomly and the signed getters in their byml library will not look at uint nodes.
+# So uints will be represented by specific classes in order to not lose type information.
+# And while we are at it, let's use classes for other types to avoid unintended type conversions.
+class Int(int):
+    pass
+class Float(float):
+    pass
+class UInt(int):
+    pass
+class Int64(int):
+    pass
+class UInt64(int):
+    pass
+class Double(float):
     pass
 
-class DictNode:
-    def __init__(self,offs,byml):
-        self.parsed = False
-        self.offs = offs
-        self.dict = {}
-        self.byml = byml
+class Byml:
+    """A simple BYMLv2 parser that handles both big endian and little endian documents."""
 
-    def __iter__(self):
-        return iter(self.subNodes())
+    def __init__(self, data: bytes) -> None:
+        self._data = data
 
-    def parse(self):
-        if self.parsed:
-            return
-
-        offs = self.offs
-        data = self.byml.data
-        count = UI24(data,offs)
-        offs+=3
-
-        for i in range(count):
-            name = UI24(data,offs)
-            nodetype = data[offs+3]
-            value = UI32(data,offs+4)
-            offs+=8
-
-            sname = self.byml.nodes[name]
-            if nodetype == 0xA0:
-                self.dict[sname] = StringNode(self.byml.strings[value],offs-4,self.byml)
-            elif nodetype == 0xC0:
-                self.dict[sname] = ArrayNode(value+1,self.byml)
-            elif nodetype == 0xC1:
-                self.dict[sname] = DictNode(value+1,self.byml)
-            elif nodetype == 0xD0:
-                s = True if value else False
-                self.dict[sname] = BooleanNode(s,offs-4,self.byml)
-            elif nodetype == 0xD1:
-                if value>0x80000000:
-                    value-=0x100000000
-                self.dict[sname] = IntegerNode(value,offs-4,self.byml)
-            elif nodetype == 0xD2:
-                v = struct.unpack('>f',struct.pack('>I',value))[0]
-                self.dict[sname] = FloatNode(v,offs-4,self.byml)
-            elif nodetype == 0xFF:
-                self.dict[sname] = NoneNode(None,offs-8,self.byml)
-            else:
-                raise ValueError("Unknown Dictionary Node Type: "+hex(nodetype))
-
-        self.parsed = True
-
-    def __getitem__(self,name):
-        node = self.getSubNode(name)
-        if isinstance(node,ValueNode):
-            return node.val
-        return node
-
-    def getSubNode(self,name):
-        if not name in self.dict:
-            raise ValueError("Dictionary has no sub node named "+str(name))
-
-        self.dict[name].parse()
-        return self.dict[name]
-
-    def getSubValue(self,name):
-        node = self.getSubNode(name)
-        if not isinstance(node,ValueNode):
-            raise TypeError("Diction sub node is not a value node")
-        return node.val
-
-    def subNodes(self):
-        for obj in self.dict.values():
-            obj.parse()
-        return self.dict
-
-class ArrayNode:
-    def __init__(self,offs,byml):
-        self.parsed = False
-        self.offs = offs
-        self.array = []
-        self.byml = byml
-
-    def __getitem__(self,name):
-        node = self.getSubNode(name)
-        if isinstance(node,ValueNode):
-            return node.val
-        return node    
-
-    def __len__(self):
-        return len(self.array)
-
-    def __iter__(self):
-        return iter(self.subNodes())
-
-    def parse(self):
-        if self.parsed:
-            return
-        
-        offs = self.offs
-        data = self.byml.data
-        count = UI24(data,offs)
-        offs+=3
-        
-        types = []
-        for i in range(count):
-            types.append(data[offs])
-            offs+=1
-            
-        if offs%4:
-            offs+=4-(offs%4)
-            
-        offsets = []
-        for i in range(count):
-            offsets.append([offs,UI32(data,offs)])
-            offs+=4
-            
-        for i in range(count):
-            type = types[i]
-            offs = offsets[i]
-            if type == 0xA0:
-                self.array.append(StringNode(self.byml.strings[offs[1]],offs[0]),self.byml)
-            elif type == 0xC1:
-                self.array.append(DictNode(offs[1]+1,self.byml))
-            else:
-                raise ValueError("Unknown array node type: "+hex(type))
-
-        self.parsed = True
-
-    def subNodes(self):
-        for obj in self.array:
-            obj.parse()
-        return self.array
-
-class BYML:
-    def __init__(self,data):
-        self.data = data
-        assert data[:2] == b'YB'
-        self.offs1 = UI32(data,4)
-        self.offs2 = UI32(data,8)
-        self.offs3 = UI32(data,12)
-        self.nodes = []
-        self.strings = []
-        self.doStringTable(self.offs1,self.nodes)
-        self.stringEnd = self.doStringTable(self.offs2,self.strings)
-        self.stringUpdates = []
-        self.rootNode = self.getRootNode(self.offs3)
-        self.rootNode.parse()
-
-    def doStringTable(self,offs,l):
-        soffs = offs
-        assert self.data[offs] == 0xC2
-        count = UI24(self.data,offs+1)
-        offs+=4
-        for i in range(count):
-            l.append(String(self.data,soffs+UI32(self.data,offs)))
-            offs+=4
-        return offs
-
-    def getRootNode(self,offs):
-        type = self.data[offs]
-        if type == 0xC0:
-            node = ArrayNode(offs+1,self)
-        elif type == 0xC1:
-            node = DictNode(offs+1,self)
+        magic = self._data[0:2]
+        if magic == b'BY':
+            self._be = True
+        elif magic == b'YB':
+            self._be = False
         else:
-            raise ValueError('Unknown Section Type: '+hex(type))
-        return node
+            raise ValueError("Invalid magic: %s (expected 'BY' or 'YB')" % magic)
 
-    def stringChanged(self,node):
-        if not node in self.stringUpdates:
-            self.stringUpdates.append(node)
+        version = self._read_u16(2)
+        if not (1 <= version <= 4):
+            raise ValueError("Invalid version: %u (expected 1-4)" % version)
+        if version == 1 and self._be:
+            raise ValueError("Invalid version: %u-wiiu (expected 1-3)" % version)
 
-    def saveChanges(self):
-        for node in self.stringUpdates:
-            if node.val not in self.strings:
-                self.strings.append(node.val)
-                self.offs3 += 4
-                self.data = self.data[:self.stringEnd]+struct.pack('>I',len(self.data))+self.data[self.stringEnd:]
-                self.data += node.val+b'\x00'
-            self.data = self.data[:node.offs]+struct.pack('>I',self.strings.index(node.val))+self.data[node.offs+4:]
+        self._hash_key_table_offset = self._read_u32(4)
+        self._string_table_offset = self._read_u32(8)
 
-        self.data = self.data[:12]+struct.pack('>I',self.offs3)+self.data[16:]
-        self.data = self.data[:self.offs2+1]+struct.pack('>I',len(self.strings))[1:]+self.data[self.offs2+4:]
+        if self._hash_key_table_offset != 0:
+            self._hash_key_table = self._parse_string_table(self._hash_key_table_offset)
+        if self._string_table_offset != 0:
+            self._string_table = self._parse_string_table(self._string_table_offset)
 
-        self.stringUpdates = []
+    def parse(self) -> typing.Union[list, dict, None]:
+        """Parse the BYML and get the root node with all children."""
+        root_node_offset = self._read_u32(12)
+        if root_node_offset == 0:
+            return None
+
+        node_type = self._data[root_node_offset]
+        if not _is_container_type(node_type):
+            raise ValueError("Invalid root node: expected array or dict, got type 0x%x" % node_type)
+        return self._parse_node(node_type, 12)
+
+    def _parse_string_table(self, offset) -> typing.List[str]:
+        if self._data[offset] != NodeType.STRING_TABLE:
+            raise ValueError("Invalid node type: 0x%x (expected 0xc2)" % self._data[offset])
+
+        array = list()
+        size = self._read_u24(offset + 1)
+        for i in range(size):
+            string_offset = offset + self._read_u32(offset + 4 + 4*i)
+            array.append(self._read_string(string_offset))
+        return array
+
+    def _parse_node(self, node_type: int, offset: int):
+        if node_type == NodeType.STRING:
+            return self._parse_string_node(self._read_u32(offset))
+        if node_type == NodeType.ARRAY:
+            return self._parse_array_node(self._read_u32(offset))
+        if node_type == NodeType.HASH:
+            return self._parse_hash_node(self._read_u32(offset))
+        if node_type == NodeType.BOOL:
+            return self._parse_bool_node(offset)
+        if node_type == NodeType.INT:
+            return self._parse_int_node(offset)
+        if node_type == NodeType.FLOAT:
+            return self._parse_float_node(offset)
+        if node_type == NodeType.UINT:
+            return self._parse_uint_node(offset)
+        if node_type == NodeType.INT64:
+            return self._parse_int64_node(self._read_u32(offset))
+        if node_type == NodeType.UINT64:
+            return self._parse_uint64_node(self._read_u32(offset))
+        if node_type == NodeType.DOUBLE:
+            return self._parse_double_node(self._read_u32(offset))
+        if node_type == NodeType.NULL:
+            return None
+        raise ValueError("Unknown node type: 0x%x" % node_type)
+
+    def _parse_string_node(self, index: int) -> str:
+        return self._string_table[index]
+
+    def _parse_array_node(self, offset: int) -> list:
+        size = self._read_u24(offset + 1)
+        array: list = list()
+        value_array_offset: int = offset + _align_up(size, 4) + 4
+        for i in range(size):
+            node_type = self._data[offset + 4 + i]
+            array.append(self._parse_node(node_type, value_array_offset + 4*i))
+        return array
+
+    def _parse_hash_node(self, offset: int) -> dict:
+        size = self._read_u24(offset + 1)
+        result: dict = dict()
+        for i in range(size):
+            entry_offset: int = offset + 4 + 8*i
+            string_index: int = self._read_u24(entry_offset + 0)
+            name: str = self._hash_key_table[string_index]
+
+            node_type = self._data[entry_offset + 3]
+            result[name] = self._parse_node(node_type, entry_offset + 4)
+
+        return result
+
+    def _parse_bool_node(self, offset: int) -> bool:
+        return self._parse_uint_node(offset) != 0
+
+    def _parse_int_node(self, offset: int) -> Int:
+        return Int(struct.unpack_from(_get_unpack_endian_character(self._be) + 'i', self._data, offset)[0])
+
+    def _parse_float_node(self, offset: int) -> Float:
+        return Float(struct.unpack_from(_get_unpack_endian_character(self._be) + 'f', self._data, offset)[0])
+
+    def _parse_uint_node(self, offset: int) -> UInt:
+        return UInt(self._read_u32(offset))
+
+    def _parse_int64_node(self, offset: int) -> Int64:
+        return Int64(struct.unpack_from(_get_unpack_endian_character(self._be) + 'q', self._data, offset)[0])
+
+    def _parse_uint64_node(self, offset: int) -> UInt64:
+        return UInt64(struct.unpack_from(_get_unpack_endian_character(self._be) + 'Q', self._data, offset)[0])
+
+    def _parse_double_node(self, offset: int) -> Double:
+        return Double(struct.unpack_from(_get_unpack_endian_character(self._be) + 'd', self._data, offset)[0])
+
+    def _read_u16(self, offset: int) -> int:
+        return struct.unpack_from(_get_unpack_endian_character(self._be) + 'H', self._data, offset)[0]
+
+    def _read_u24(self, offset: int) -> int:
+        if self._be:
+            return struct.unpack('>I', _NUL_CHAR + self._data[offset:offset+3])[0]
+        return struct.unpack('<I', self._data[offset:offset+3] + _NUL_CHAR)[0]
+
+    def _read_u32(self, offset: int) -> int:
+        return struct.unpack_from(_get_unpack_endian_character(self._be) + 'I', self._data, offset)[0]
+
+    def _read_string(self, offset: int) -> str:
+        end = self._data.find(_NUL_CHAR, offset)
+        return self._data[offset:end].decode('utf-8')
+
+class _PlaceholderOffsetWriter:
+    """Writes a placeholder offset value that will be filled later."""
+    def __init__(self, stream: typing.BinaryIO, parent) -> None:
+        self._stream = stream
+        self._offset = stream.tell()
+        self._parent = parent
+    def write_placeholder(self) -> None:
+        self._stream.write(self._parent._u32(0xffffffff))
+    def write_offset(self, offset: int, base: int = 0) -> None:
+        current_offset = self._stream.tell()
+        self._stream.seek(self._offset)
+        self._stream.write(self._parent._u32(offset - base))
+        self._stream.seek(current_offset)
+    def write_current_offset(self, base: int = 0) -> None:
+        self.write_offset(self._stream.tell(), base)
+
+_NodeToOffsetMap = typing.Dict[typing.Tuple[NodeType, typing.Any], int]
+def _freeze_object(o):
+    def _freeze(o):
+        if isinstance(o, dict):
+            return frozenset({ k: _freeze(v) for k,v in o.items()}.items())
+        if isinstance(o, list):
+            return tuple([_freeze(v) for v in o])
+        return o
+    return _freeze(o)
+
+class Writer:
+    """BYMLv2 writer."""
+
+    def __init__(self, data: typing.Union[dict, list], be=False, version=2) -> None:
+        self._data = data
+        self._be = be
+        self._version = version
+
+        if not isinstance(data, list) and not isinstance(data, dict):
+            raise ValueError("Data should be a dict or a list")
+
+        if not (1 <= version <= 3):
+            raise ValueError("Invalid version: %u (expected 1-3)" % version)
+        if version == 1 and be:
+            raise ValueError("Invalid version: %u-wiiu (expected 1-3)" % version)
+
+        self._hash_key_table: SortedDict[str, int] = SortedDict()
+        self._string_table: SortedDict[str, int] = SortedDict()
+        self._make_string_table(self._data, self._hash_key_table, self._string_table)
+        # Nintendo seems to sort entries in alphabetical order.
+        self._sort_string_table(self._hash_key_table)
+        self._sort_string_table(self._string_table)
+
+    def get_bytes(self):
+        stream = io.BytesIO()
+        self.write(stream)
+        return stream.getvalue()
+
+    def write(self, stream: typing.BinaryIO) -> None:
+        # Header
+        stream.write(b'BY' if self._be else b'YB')
+        stream.write(self._u16(self._version))
+        if self._hash_key_table:
+            hash_key_table_offset_writer = self._write_placeholder_offset(stream)
+        else:
+            stream.write(self._u32(0))
+        if self._string_table:
+            string_table_offset_writer = self._write_placeholder_offset(stream)
+        else:
+            stream.write(self._u32(0))
+        root_node_offset_writer = self._write_placeholder_offset(stream)
+
+        # Hash key table
+        if self._hash_key_table:
+            hash_key_table_offset_writer.write_current_offset()
+            self._write_string_table(stream, self._hash_key_table)
+            stream.seek(_align_up(stream.tell(), 4))
+
+        # String table
+        if self._string_table:
+            string_table_offset_writer.write_current_offset()
+            self._write_string_table(stream, self._string_table)
+            stream.seek(_align_up(stream.tell(), 4))
+
+        # Root node
+        root_node_offset_writer.write_current_offset()
+        # Nintendo attempts to minimize document size by reusing nodes where possible.
+        # Let us do so too.
+        node_to_offset_map: _NodeToOffsetMap = dict()
+        self._write_nonvalue_node(stream, self._data, node_to_offset_map)
+        stream.seek(_align_up(stream.tell(), 4))
+
+    def _make_string_table(self, data, hash_key_table: SortedDict, string_table: SortedDict):
+        if isinstance(data, str) and data not in string_table:
+            string_table[data] = 0xffffffff
+        elif isinstance(data, list):
+            for item in data:
+                self._make_string_table(item, hash_key_table, string_table)
+        elif isinstance(data, dict):
+            for (key, value) in data.items():
+                if key not in hash_key_table:
+                    hash_key_table[key] = 0xffffffff
+                self._make_string_table(value, hash_key_table, string_table)
+
+    def _sort_string_table(self, table: SortedDict):
+        for (i, key) in enumerate(table.keys()):
+            table[key] = i
+
+    def _write_string_table(self, stream: typing.BinaryIO, table: typing.Dict[str, int]):
+        base = stream.tell()
+        stream.write(self._u8(NodeType.STRING_TABLE))
+        stream.write(self._u24(len(table)))
+        offset_writers: typing.List[_PlaceholderOffsetWriter] = []
+        for i in range(len(table)):
+            offset_writers.append(self._write_placeholder_offset(stream))
+        last_offset_writer = self._write_placeholder_offset(stream)
+
+        for (string, offset_writer) in zip(table.keys(), offset_writers):
+            offset_writer.write_current_offset(base)
+            stream.write(bytes(string, "utf8"))
+            stream.write(_NUL_CHAR)
+        last_offset_writer.write_current_offset(base)
+
+    def _write_nonvalue_node(self, stream: typing.BinaryIO, data, node_to_offset_map) -> None:
+        nonvalue_nodes: typing.List[typing.Tuple[typing.Any, _PlaceholderOffsetWriter]] = []
+
+        if isinstance(data, list):
+            stream.write(self._u8(NodeType.ARRAY))
+            stream.write(self._u24(len(data)))
+            for item in data:
+                stream.write(self._u8(self._to_byml_type(item)))
+            stream.seek(_align_up(stream.tell(), 4))
+            for item in data:
+                if _is_value_type(self._to_byml_type(item)):
+                    stream.write(self._to_byml_value(item))
+                else:
+                    nonvalue_nodes.append((item, self._write_placeholder_offset(stream)))
+        elif isinstance(data, dict):
+            stream.write(self._u8(NodeType.HASH))
+            stream.write(self._u24(len(data)))
+            for key in sorted(data.keys()):
+                value = data[key]
+                stream.write(self._u24(self._hash_key_table[key]))
+                node_type = self._to_byml_type(value)
+                stream.write(self._u8(node_type))
+                if _is_value_type(node_type):
+                    stream.write(self._to_byml_value(value))
+                else:
+                    nonvalue_nodes.append((value, self._write_placeholder_offset(stream)))
+        elif isinstance(data, UInt64):
+            stream.write(self._u64(data))
+        elif isinstance(data, Int64):
+            stream.write(self._s64(data))
+        elif isinstance(data, Double):
+            stream.write(self._f64(data))
+        elif isinstance(data, int) or isinstance(data, float):
+            raise ValueError("Implicit conversions from int/float are not supported -- "
+                             "please use Int/Float/UInt/Int64/UInt64/Double")
+        else:
+            raise ValueError("Invalid non-value type")
+
+        for (data, offset_writer) in nonvalue_nodes:
+            node = (self._to_byml_type(data), _freeze_object(data))
+            if node in node_to_offset_map:
+                offset_writer.write_offset(node_to_offset_map[node])
+            else:
+                offset_writer.write_current_offset()
+                node_to_offset_map[node] = stream.tell()
+                self._write_nonvalue_node(stream, data, node_to_offset_map)
+
+    def _to_byml_type(self, data) -> NodeType:
+        if isinstance(data, str):
+            return NodeType.STRING
+        if isinstance(data, list):
+            return NodeType.ARRAY
+        if isinstance(data, dict):
+            return NodeType.HASH
+        if isinstance(data, bool):
+            return NodeType.BOOL
+        if isinstance(data, Int):
+            return NodeType.INT
+        if isinstance(data, Float):
+            return NodeType.FLOAT
+        if isinstance(data, UInt):
+            return NodeType.UINT
+        if isinstance(data, Int64):
+            return NodeType.INT64
+        if isinstance(data, UInt64):
+            return NodeType.UINT64
+        if isinstance(data, Double):
+            return NodeType.DOUBLE
+        if data is None:
+            return NodeType.NULL
+        if isinstance(data, int) or isinstance(data, float):
+            raise ValueError("Implicit conversions from int/float are not supported -- "
+                             "please use Int/Float/UInt/Int64/UInt64/Double")
+        raise ValueError("Invalid value type")
+
+    def _to_byml_value(self, value) -> bytes:
+        if isinstance(value, str):
+            return self._u32(self._string_table[value])
+        if isinstance(value, bool):
+            return self._u32(1 if value != 0 else 0)
+        if isinstance(value, Int):
+            return self._s32(value)
+        if isinstance(value, UInt):
+            return self._u32(value)
+        if isinstance(value, Float):
+            return self._f32(value)
+        if value is None:
+            return self._u32(0)
+        raise ValueError("Invalid value type")
+
+    def _write_placeholder_offset(self, stream) -> _PlaceholderOffsetWriter:
+        p = _PlaceholderOffsetWriter(stream, self)
+        p.write_placeholder()
+        return p
+
+    def _u8(self, value) -> bytes:
+        return struct.pack('B', value)
+    def _u16(self, value) -> bytes:
+        return struct.pack(_get_unpack_endian_character(self._be) + 'H', value)
+    def _s16(self, value) -> bytes:
+        return struct.pack(_get_unpack_endian_character(self._be) + 'h', value)
+    def _u24(self, value) -> bytes:
+        b = struct.pack(_get_unpack_endian_character(self._be) + 'I', value)
+        return b[1:] if self._be else b[:-1]
+    def _u32(self, value) -> bytes:
+        return struct.pack(_get_unpack_endian_character(self._be) + 'I', value)
+    def _s32(self, value) -> bytes:
+        return struct.pack(_get_unpack_endian_character(self._be) + 'i', value)
+    def _u64(self, value) -> bytes:
+        return struct.pack(_get_unpack_endian_character(self._be) + 'Q', value)
+    def _s64(self, value) -> bytes:
+        return struct.pack(_get_unpack_endian_character(self._be) + 'q', value)
+    def _f32(self, value) -> bytes:
+        return struct.pack(_get_unpack_endian_character(self._be) + 'f', value)
+    def _f64(self, value) -> bytes:
+        return struct.pack(_get_unpack_endian_character(self._be) + 'd', value)
