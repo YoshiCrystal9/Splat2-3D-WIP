@@ -62,7 +62,7 @@ except (AttributeError):
 
 import os, random
 from names import description, levelName, objectName, SettingName, ReplaceModel
-import bymla, fmdl, inkling, preseteditor, sarc, yaz0
+import byml, fmdl, inkling, preseteditor, sarc, yaz0
 
 import datetime
 now = datetime.datetime.now
@@ -143,11 +143,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Loads MapInfo.release.byaml, to get the list of levels for the level choosing dialog
         """        
-        with open(self.gamePath+'/Pack/Mush.release.packe/Mush/MapInfo.release.bymla','rb') as f:
+        with open(self.gamePath+'/Pack/Mush.release.packe/Mush/MapInfo.release.byml','rb') as f:
             data = f.read()
             
         # no need to compress or anything, it's as-is
-        self.levelList = bymlaa.BYML(data).rootNode
+        self.levelList = byml.BYML(data).rootNode
         
     # Splatoon stores it's levels in /Pack/Map/____.szs/____.byaml so it's double layered
     # looks like we have to double the decompression and extraction
@@ -172,11 +172,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 with open(path, 'rb') as f:
                     data = f.read()
                 if custom == 0:
-                    self.levelData = bymla.BYML(sarc.extract(yaz0.decompress(data), levelSelect.stageName + '.byaml'))
+                    self.levelData = byml.BYML(sarc.extract(yaz0.decompress(data), levelSelect.stageName + '.byaml'))
                     self.loadLevel(self.levelData.rootNode)
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName) + ')')                       
                 if custom == 1:
-                    self.levelData = bymla.BYML(sarc.extract(yaz0.decompress(data), levelSelect.stageNamePath + '.byaml'))
+                    self.levelData = byml.BYML(sarc.extract(yaz0.decompress(data), levelSelect.stageNamePath + '.byaml'))
                     self.loadLevel(self.levelData.rootNode)
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')                 
                 
@@ -462,17 +462,17 @@ class SettingsWidget(QtWidgets.QWidget):
             if not key in ['Scale','Translate','Rotate','UnitConfig','UnitConfigName',
                            'ModelName', 'Team', 'Text']:
                 lbl = QtWidgets.QLabel(SettingName(key)+':')
-                if isinstance(vnode,bymla.FloatNode):
+                if isinstance(vnode,byml.FloatNode):
                     box = FloatEdit(obj.data[key],self.changed2)
                     box.node = vnode
-                elif isinstance(vnode,bymla.IntegerNode):
+                elif isinstance(vnode,byml.IntegerNode):
                     box = IntEdit(obj.data[key],self.changed2)
                     box.node = vnode
-                elif isinstance(vnode,bymla.BooleanNode):
+                elif isinstance(vnode,byml.BooleanNode):
                     box = CheckBox(vnode)
                     if obj.data[key]:
                         box.toggle()
-                elif isinstance(vnode,bymla.StringNode):
+                elif isinstance(vnode,byml.StringNode):
                     box = LineEdit(str(obj.data[key]),self.changed2)
                     box.node = vnode
                     box.setEnabled(False)
@@ -493,7 +493,7 @@ class SettingsWidget(QtWidgets.QWidget):
                 
             elif key == 'ModelName':
                 lbl = QtWidgets.QLabel(key+':')
-                if isinstance(vnode,bymla.StringNode):
+                if isinstance(vnode,byml.StringNode):
                     box = LineEdit(str(obj.data['ModelName']),self.modelNameChanged)
                     box.node = vnode
                 else:
@@ -504,7 +504,7 @@ class SettingsWidget(QtWidgets.QWidget):
                 
             elif key == 'Team':
                 self.team_lbl = QtWidgets.QLabel(key+':')              
-                if isinstance(vnode,bymla.IntegerNode):
+                if isinstance(vnode,byml.IntegerNode):
                     self.team_box = ComboBoxEdit((obj.data['Team']),self.changed)
                     self.team_box.setToolTip('A value of 2 means neutral, for all game modes.')  
                     self.team_box.node = vnode

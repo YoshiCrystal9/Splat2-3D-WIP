@@ -27,13 +27,6 @@ official policies, either expressed or implied, of Yannik Marchand.
 """
 
 import struct
-import byml
-
-parser = byml.Byml(raw_bytes)
-document = parser.parse()
-
-writer = byml.Writer(document, be=big_endian_mode, version=byml_version)
-writer.write(writable_seekable_stream)
 
 def String(data,offs):
     return data[offs:].split(b'\0')[0].decode('shift-jis')
