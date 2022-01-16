@@ -82,7 +82,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setupMenu()
         
-        self.qsettings = QtCore.QSettings("Kinnay, MrRean","Splat3D, based off of 3DW Editor by Kinnay")
+        self.qsettings = QtCore.QSettings("YoshiCrystal","Splatoon 2 Level Editor, based off of Splat3D by Kinnay and MrReam")
         self.gamePath = self.qsettings.value('gamePath')
         if not self.isValidGameFolder(self.gamePath):
             self.changeGamePath(True)
@@ -131,11 +131,10 @@ class MainWindow(QtWidgets.QMainWindow):
         Returns a value depending on if the game folder the user chose is acceptable
         """        
         if not folder: return 0
-        if not os.path.exists(folder+'/Pack'): return 0
+        if not os.path.exists(folder+'/Mush'): return 0
         if not os.path.exists(folder+'/Model'): return 0
-        if not os.path.exists(folder+'/Pack/Map.pack'): return 0
-        if not os.path.exists(folder+'/Pack/Mush.release.pack'): return 0
-        if not os.path.exists(folder+'/Pack/Param.pack'): return 0   
+        if not os.path.exists(folder+'/Map'): return 0
+        if not os.path.exists(folder+'/Param'): return 0
         return 1
 
     # luckily Splatoon has a MapInfo.byaml to load stuff in....
@@ -143,7 +142,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Loads MapInfo.release.byaml, to get the list of levels for the level choosing dialog
         """        
-        with open(self.gamePath+'/Pack/Mush.release.packe/Mush/MapInfo.release.byml','rb') as f:
+        with open(self.gamePath+'/Mush/MapInfo.release.byml','rb') as f:
             data = f.read()
             
         # no need to compress or anything, it's as-is
@@ -163,8 +162,8 @@ class MainWindow(QtWidgets.QMainWindow):
             if levelSelect.absolutePath:
                 path = levelSelect.stageName
                 name = levelSelect.stageNamePath
-                print('ok so path is ' + path)
-                print('and our name is ' + name)
+                print('Path: ' + path)
+                print('Level name ' + name)
                 custom = 1
             else:
                 path = self.gamePath + '/Map' + levelSelect.stageName + '.szs'
@@ -174,11 +173,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 with open(path, 'rb') as f:
                     data = f.read()
                 if custom == 0:
-                    self.levelData = byml.Byml(sarc.extract(yaz0.decompress(data), levelSelect.stageName + '.byaml'))
+                    print(levelSelect.stageName + '.byaml')
+                    self.levelData = byml.Byml((sarc.extract(path), self.gamePath + '/levelSelect.stageName' + levelSelect.stageName + '.byaml'))
                     self.loadLevel(self.levelData.rootNode)
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName) + ')')                       
                 if custom == 1:
-                    self.levelData = byml.Byml(sarc.extract(yaz0.decompress(data), levelSelect.stageNamePath + '.byaml'))
+                    self.levelData = byml.Byml((sarc.extract(path), self.gamePath + '/', levelSelect.stageName + levelSelect.stageName + '.byaml'))
                     self.loadLevel(self.levelData.rootNode)
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')                 
                 
