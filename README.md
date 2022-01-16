@@ -20,6 +20,8 @@ PyQt5 Download: https://sourceforge.net/projects/pyqt/files/PyQt5/PyQt-5.5.1/PyQ
 
 https://github.com/zeldamods/byml-v2
 
+https://github.com/zeldamods/sarc
+
 Use 1 of the 2 links at the bottom to install. 
 
 32-bit Python is *mostly* required, due to the PyOpenGL depency. 
