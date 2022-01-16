@@ -173,12 +173,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 with open(path, 'rb') as f:
                     data = f.read()
                 if custom == 0:
-                    print(levelSelect.stageName + '.byaml')
-                    self.levelData = byml.Byml((sarc.extract(path), self.gamePath + '/levelSelect.stageName' + levelSelect.stageName + '.byaml'))
+                    print(self.gamePath)
+                    self.levelData = byml.Byml((sarc.extract(path),data))
                     self.loadLevel(self.levelData.rootNode)
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName) + ')')                       
                 if custom == 1:
-                    self.levelData = byml.Byml((sarc.extract(path), self.gamePath + '/', levelSelect.stageName + levelSelect.stageName + '.byaml'))
+                    print(self.gamePath)
+                    self.levelData = byml.Byml((sarc.extract(path),data))
                     self.loadLevel(self.levelData.rootNode)
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')                 
                 
