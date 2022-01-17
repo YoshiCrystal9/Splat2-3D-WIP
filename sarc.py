@@ -1,257 +1,224 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-# SARC Tool
-# Version v0.5
-# Copyright © 2017-2019 MasterVermilli0n / AboodXD
-
-# This is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# This is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-################################################################
-################################################################
+#
+# Made by NWPlayer123 and MasterVermilli0n/AboodXD, no rights reserved, feel free to do whatever
+#
 
 import os
 import sys
-import time
+import struct
 
-try:
-    import SarcLib
+from libyaz0 import decompress as Yaz0Dec
 
-except ImportError:
-    print("SarcLib is not installed!")
-    ans = input("Do you want to install it now? (y/n)\t")
-    if ans.lower() == 'y':
-        import pip
-        pip.main(['install', 'SarcLib==0.3'])
-        del pip
 
-        import SarcLib
+def uint8(data, pos, bom):
+    return struct.unpack(bom + "B", data[pos:pos + 1])[0]
 
+
+def uint16(data, pos, bom):
+    return struct.unpack(bom + "H", data[pos:pos + 2])[0]
+
+
+def uint32(data, pos, bom):
+    return struct.unpack(bom + "I", data[pos:pos + 4])[0]
+
+
+def bytes_to_string(data, offset=0, charWidth=1, encoding='utf-8'):
+    # Thanks RoadrunnerWMC
+    end = data.find(b'\0' * charWidth, offset)
+    if end == -1:
+        return data[offset:].decode(encoding)
+
+    return data[offset:end].decode(encoding)
+
+
+def sarc_extract(data, mode):
+    print("Reading SARC....")
+    pos = 6
+
+    name, ext = os.path.splitext(sys.argv[1])
+
+    if mode == 1:  # Don't need to check again with normal SARC
+        magic1 = data[0:4]
+
+        if magic1 != b"SARC":
+            print("Not a SARC Archive!")
+            print("Writing Decompressed File....")
+
+            with open(name + ".bin", "wb") as f:
+                f.write(data)
+
+            print("Done!")
+
+    # Byte Order Mark
+    order = uint16(data, pos, ">")
+    pos += 6
+
+    if order == 0xFEFF:  # Big Endian
+        bom = ">"
+    elif order == 0xFFFE:  # Little Endian
+        bom = "<"
     else:
+        print("Invalid BOM!")
         sys.exit(1)
 
-try:
-    import libyaz0
+    # Start of data section
+    doff = uint32(data, pos, bom)
+    pos += 8
 
-except ImportError:
-    print("libyaz0 is not installed!")
-    ans = input("Do you want to install it now? (y/n)\t")
-    if ans.lower() == 'y':
-        import pip
-        pip.main(['install', 'libyaz0==0.5'])
-        del pip
+    # ---------------------------------------------------------------
 
-        import libyaz0
+    magic2 = data[pos:pos + 4]
+    pos += 6
 
-    else:
-        sys.exit(1)
+    assert magic2 == b"SFAT"
 
+    # Node Count
+    node_count = uint16(data, pos, bom)
+    pos += 6
 
-def extract(file):
-    """
-    Extrct the given archive
-    """
-    with open(file, "rb") as inf:
-        inb = inf.read()
+    nodes = []
 
-    while libyaz0.IsYazCompressed(inb):
-        inb = libyaz0.decompress(inb)
+    print("Reading File Attribute Table...")
 
-    name = os.path.splitext(file)[0]
-    ext = SarcLib.guessFileExt(inb)
+    for x in range(node_count):
+        pos += 8
 
-    if ext != ".sarc":
-        with open(''.join([name, ext]), "wb") as out:
-            out.write(inb)
+        # File Offset Start
+        srt = uint32(data, pos, bom)
+        pos += 4
 
-    else:
-        arc = SarcLib.SARC_Archive()
-        arc.load(inb)
+        # File Offset End
+        end = uint32(data, pos, bom)
+        pos += 4
 
-        root = os.path.join(os.path.dirname(file), name)
-        if not os.path.isdir(root):
-            os.mkdir(root)
+        nodes.append([srt, end])
 
-        files = []
+    # ---------------------------------------------------------------
+    magic3 = data[pos:pos + 4]
+    pos += 8
 
-        def getAbsPath(folder, path):
-            nonlocal root
-            nonlocal files
+    assert magic3 == b"SFNT"
+    strings = []
 
-            for checkObj in folder.contents:
-                if isinstance(checkObj, SarcLib.File):
-                    files.append(["/".join([path, checkObj.name]), checkObj.data])
+    print("Reading file names....")
+    no_names = 0
 
-                else:
-                    path_ = os.path.join(root, "/".join([path, checkObj.name]))
-                    if not os.path.isdir(path_):
-                        os.mkdir(path_)
+    if bytes_to_string(data[pos:]) == "":
+        print("No file names found....")
+        no_names = 1
 
-                    getAbsPath(checkObj, "/".join([path, checkObj.name]))
-
-        for checkObj in arc.contents:
-            if isinstance(checkObj, SarcLib.File):
-                files.append([checkObj.name, checkObj.data])
-
-            else:
-                path = os.path.join(root, checkObj.name)
-                if not os.path.isdir(path):
-                    os.mkdir(path)
-
-                getAbsPath(checkObj, checkObj.name)
-
-        for file, fileData in files:
-            print(file)
-            with open(os.path.join(root, file), "wb") as out:
-                out.write(fileData)
-
-
-def pack(root, endianness, level, outname):
-    """
-    Pack the files and folders in the root folder.
-    """
-
-    if "\\" in root:
-        root = "/".join(root.split("\\"))
-
-    if root[-1] == "/":
-        root = root[:-1]
-
-    arc = SarcLib.SARC_Archive(endianness=endianness)
-    lenroot = len(root.split("/"))
-
-    for path, dirs, files in os.walk(root):
-        if "\\" in path:
-            path = "/".join(path.split("\\"))
-
-        lenpath = len(path.split("/"))
-
-        if lenpath == lenroot:
-            path = ""
-
-        else:
-            path = "/".join(path.split("/")[lenroot - lenpath:])
-
-        for file in files:
-            if path:
-                filename = ''.join([path, "/", file])
-
-            else:
-                filename = file
-
-            print(filename)
-
-            fullname = ''.join([root, "/", filename])
-
-            i = 0
-            for folder in filename.split("/")[:-1]:
-                if not i:
-                    exec("folder%i = SarcLib.Folder(folder + '/'); arc.addFolder(folder%i)".replace('%i', str(i)))
-
-                else:
-                    exec("folder%i = SarcLib.Folder(folder + '/'); folder%m.addFolder(folder%i)".replace('%i', str(i)).replace('%m', str(i - 1)))
-
-                i += 1
-
-            with open(fullname, "rb") as f:
-                inb = f.read()
-
-            hasFilename = True
-            if file[:5] == "hash_":
-                hasFilename = False
-
-            if not i:
-                arc.addFile(SarcLib.File(file, inb, hasFilename))
-
-            else:
-                exec("folder%m.addFile(SarcLib.File(file, inb, hasFilename))".replace('%m', str(i - 1)))
-
-    data, maxAlignment = arc.save()
-
-    if level != -1:
-        outData = libyaz0.compress(data, maxAlignment, level)
-        del data
-
-        if not outname:
-            outname = ''.join([root, ".szs"])
+        for x in range(node_count):
+            strings.append("file" + str(x))
 
     else:
-        outData = data
-        if not outname:
-            outname = ''.join([root, ".sarc"])
+        for x in range(node_count):
+            string = bytes_to_string(data[pos:])
+            pos += len(string)
 
-    with open(outname, "wb+") as output:
-        output.write(outData)
+            while (data[pos]) == 0:
+                pos += 1  # Move to the next string
 
+            strings.append(string)
 
-def printInfo():
-    print("Usage:")
-    print("  main [option...] file/folder")
-    print("\nPacking Options:")
-    print(" -o <output>           output file name (Optional)")
-    print(" -little (or -l)       output will be in little endian if this is used")
-    print(" -compress <level>     Yaz0 (SZS) compress the output with the specified level(0-9) (1 is the default)")
-    print("                       0: No compression (Fastest)")
-    print("                       9: Best compression (Slowest)")
-    print("\nExiting in 5 seconds...")
-    time.sleep(5)
-    sys.exit(1)
+    # ---------------------------------------------------------------
+    print("Writing Files....")
+
+    try:
+        os.mkdir(name)
+    except OSError:
+        print("Folder already exists, continuing....")
+
+    if no_names:
+        print("No names found. Trying to guess the file names...")
+
+    bntx_count = 0
+    bnsh_count = 0
+    flan_count = 0
+    flyt_count = 0
+    flim_count = 0
+    gtx_count  = 0
+    sarc_count = 0
+    szs_count  = 0
+    file_count = 0
+
+    for x in range(node_count):
+        filename = os.path.join(name, strings[x])
+
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+
+        start, end = (doff + nodes[x][0]), (doff + nodes[x][1])
+        filedata = data[start:end]
+
+        if no_names:
+            if filedata[0:4] == b"BNTX":
+                filename = name + "/" + "bntx" + str(bntx_count) + ".bntx"
+                bntx_count += 1
+
+            elif filedata[0:4] == b"BNSH":
+                filename = name + "/" + "bnsh" + str(bnsh_count) + ".bnsh"
+                bnsh_count += 1
+
+            elif filedata[0:4] == b"FLAN":
+                filename = name + "/" + "bflan" + str(flan_count) + ".bflan"
+                flan_count += 1
+
+            elif filedata[0:4] == b"FLYT":
+                filename = name + "/" + "bflyt" + str(flyt_count) + ".bflyt"
+                flyt_count += 1
+
+            elif filedata[-0x28:-0x24] == b"FLIM":
+                filename = name + "/" + "bflim" + str(flim_count) + ".bflim"
+                flim_count += 1
+
+            elif filedata[0:4] == b"Gfx2":
+                filename = name + "/" + "gtx" + str(gtx_count) + ".gtx"
+                gtx_count += 1
+
+            elif filedata[0:4] == b"SARC":
+                filename = name + "/" + "sarc" + str(sarc_count) + ".sarc"
+                sarc_count += 1
+
+            elif filedata[0:4] == b"Yaz0":
+                filename = name + "/" + "szs" + str(szs_count) + ".szs"
+                szs_count += 1
+
+            else:
+                filename = name + "/" + "file" + str(file_count)
+                file_count += 1
+
+        print(filename)
+
+        with open(filename, "wb") as f:
+            f.write(filedata)
+
+    print("Done!")
 
 
 def main():
-    print("SARC Tool v0.5")
-    print("(C) 2017-2019 MasterVermilli0n / AboodXD\n")
+    print("SARCExtract v0.5 by MasterVermilli0n/AboodXD")
+    print("Originally by NWPlayer123")
 
-    if len(sys.argv) < 2:
-        printInfo()
-
-    root = os.path.abspath(sys.argv[-1])
-    if os.path.isfile(root):
-        extract(root)
-
-    elif os.path.isdir(root):
-        endianness = '>'
-        level = -1
-
-        if "-little" in sys.argv or "-l" in sys.argv:
-            endianness = '<'
-
-        if "-compress" in sys.argv:
-            try:
-                level = int(sys.argv[sys.argv.index("-compress") + 1], 0)
-
-            except ValueError:
-                level = 1
-
-            if not 0 <= level <= 9:
-                print("Invalid compression level!\n")
-                print("Exiting in 5 seconds...")
-                time.sleep(5)
-                sys.exit(1)
-
-        if "-o" in sys.argv:
-            outname = sys.argv[sys.argv.index("-o") + 1]
-
-        else:
-            outname = ""
-
-        pack(root, endianness, level, outname)
-
-    else:
-        print("File/Folder doesn't exist!")
-        print("\nExiting in 5 seconds...")
-        time.sleep(5)
+    if len(sys.argv) != 2:
+        print("Usage: SARCExtract archive.szs")
         sys.exit(1)
 
-if __name__ == '__main__': main()
+    with open(sys.argv[1], "rb") as f:
+        data = f.read()
+
+        print(data)
+
+    magic = data[0:4]
+
+    if magic == b"Yaz0":
+        decompressed = Yaz0Dec(data)
+        sarc_extract(decompressed, 1)
+
+    elif magic == b"SARC":
+        sarc_extract(data, 0)
+
+    else:
+        print("Unknown File Format: First 4 bytes of file must be Yaz0 or SARC")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
