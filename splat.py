@@ -491,7 +491,7 @@ class SettingsWidget(QtWidgets.QWidget):
                     box = CheckBox(vnode)
                     if obj.data[key]:
                         box.toggle()
-                elif isinstance(vnode, type(byml.NodeType.STRING.name)):         # CHANGE THIS LATER TO STRING, IM JUST TESTING THINGS HERE
+                elif isinstance(vnode, type(byml.NodeType.STRING.name)):
                     box = LineEdit(str(obj.data[key]),self.changed2)
                     box.node = vnode
                     box.setEnabled(False)
@@ -512,7 +512,7 @@ class SettingsWidget(QtWidgets.QWidget):
                 
             elif key == 'ModelName':
                 lbl = QtWidgets.QLabel(key+':')
-                if isinstance(vnode, type(byml.NodeType.STRING.name)):   # CHANGE THIS LATER TO STRING, IM JUST TESTING THINGS HERE
+                if isinstance(vnode, type(byml.NodeType.STRING.name)):
                     box = LineEdit(str(obj.data['ModelName']),self.modelNameChanged)
                     box.node = vnode
                 else:
