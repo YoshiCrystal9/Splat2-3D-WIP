@@ -148,7 +148,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # no need to compress or anything, it's as-is
         self.levelList = byml.Byml(data).parse()
 
-        # byml.BYML(data).rootNode SEE WHAT TO DO WITH THIS LOL HELP
+        # byml.BYML(data).rootNode
         
     # Splatoon stores it's levels in /Pack/Map/____.szs/____.byaml so it's double layered
     # looks like we have to double the decompression and extraction
@@ -170,16 +170,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 custom = 0
 
             if os.path.isfile(path):
+                pathndos = self.gamePath + '/Map' + '/' + name + '/' + name + '.byaml'
                 with open(path, 'rb') as f:
                     data = f.read()
                 if custom == 0:
-                    print(self.gamePath)
-                    self.levelData = byml.Byml((sarc.extract(path),data))
+                    print("coño ya", pathndos)
+                    sarc.extract(path)
+                    self.levelData = byml.Byml(pathndos)
                     self.loadLevel(self.levelData.rootNode)
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName) + ')')                       
                 if custom == 1:
-                    print(self.gamePath)
-                    self.levelData = byml.Byml((sarc.extract(path),data))
+                    print("coño ya", pathndos)
+                    sarc.extract(path)
+                    self.levelData = byml.Byml(pathndos)
                     self.loadLevel(self.levelData.rootNode)
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')                 
                 
