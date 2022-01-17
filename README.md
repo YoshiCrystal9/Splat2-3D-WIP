@@ -5,9 +5,11 @@ To use this editor, you need PyQt5, and PyOpenGL. These need to be ran on an ins
 
 # TO DO
 
-Make the program to not crash when selecting an object.
+Fix Please enter a valid float message.
 
 Make object models to load.
+
+Fix saving byaml.
 
 # How to use
 First, download this program. 
