@@ -480,7 +480,7 @@ class SettingsWidget(QtWidgets.QWidget):
             if not key in ['Scale','Translate','Rotate','UnitConfig','UnitConfigName',
                            'ModelName', 'Team', 'Text']:
                 lbl = QtWidgets.QLabel(SettingName(key)+':')
-                if isinstance(vnode,byml.NodeType(FLOAT)):
+                if isinstance(vnode,byml.Byml._to_byml_type(Float)):
                     box = FloatEdit(obj.data[key],self.changed2)
                     box.node = vnode
                 elif isinstance(vnode,byml.NodeType('INT')):
