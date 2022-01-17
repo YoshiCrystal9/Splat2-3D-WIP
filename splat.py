@@ -351,8 +351,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """        
         fn = QtWidgets.QFileDialog.getSaveFileName(self,'Save Level','Map','Unpacked Levels (*.byaml)')[0]
         with open(fn,'wb') as f:
-            self.levelData.saveChanges()
-            f.write(self.levelData.data)
+            self.levelData.parse()
+            f.write(self.levelData._data)
             
     def setupGLScene(self):
         self.glWidget = LevelWidget(self)      
@@ -476,21 +476,21 @@ class SettingsWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.sclz)
 
         for key in obj.data:
-            vnode = obj.data.getSubNode(key)
+            vnode = obj.data
             if not key in ['Scale','Translate','Rotate','UnitConfig','UnitConfigName',
                            'ModelName', 'Team', 'Text']:
                 lbl = QtWidgets.QLabel(SettingName(key)+':')
-                if isinstance(vnode,byml.FloatNode):
+                if isinstance(vnode,byml.NodeType(FLOAT)):
                     box = FloatEdit(obj.data[key],self.changed2)
                     box.node = vnode
-                elif isinstance(vnode,byml.IntegerNode):
+                elif isinstance(vnode,byml.NodeType('INT')):
                     box = IntEdit(obj.data[key],self.changed2)
                     box.node = vnode
-                elif isinstance(vnode,byml.BooleanNode):
+                elif isinstance(vnode,byml.NodeType('BOOL')):
                     box = CheckBox(vnode)
                     if obj.data[key]:
                         box.toggle()
-                elif isinstance(vnode,byml.StringNode):
+                elif isinstance(vnode,byml.NodeType('STRING')):
                     box = LineEdit(str(obj.data[key]),self.changed2)
                     box.node = vnode
                     box.setEnabled(False)
@@ -511,7 +511,7 @@ class SettingsWidget(QtWidgets.QWidget):
                 
             elif key == 'ModelName':
                 lbl = QtWidgets.QLabel(key+':')
-                if isinstance(vnode,byml.StringNode):
+                if isinstance(vnode,byml.NodeType(STRING)):
                     box = LineEdit(str(obj.data['ModelName']),self.modelNameChanged)
                     box.node = vnode
                 else:
@@ -522,7 +522,7 @@ class SettingsWidget(QtWidgets.QWidget):
                 
             elif key == 'Team':
                 self.team_lbl = QtWidgets.QLabel(key+':')              
-                if isinstance(vnode,byml.IntegerNode):
+                if isinstance(vnode,byml.NodeType(INT)):
                     self.team_box = ComboBoxEdit((obj.data['Team']),self.changed)
                     self.team_box.setToolTip('A value of 2 means neutral, for all game modes.')  
                     self.team_box.node = vnode
@@ -561,11 +561,11 @@ class SettingsWidget(QtWidgets.QWidget):
         if box.text():
             box.node.changeValue(box.text())
 
-    #def configNameChanged(self,box):
-    #    if box.text():
-    #        box.node.changeValue(box.text())
-    #        self.config_lbl.setText(box.text())
-    #        self.current.updateModel()
+    def configNameChanged(self,box):
+        if box.text():
+            box.node.changeValue(box.text())
+            self.config_lbl.setText(box.text())
+            self.current.updateModel()
 
     def modelNameChanged(self,box):
         if box.text():

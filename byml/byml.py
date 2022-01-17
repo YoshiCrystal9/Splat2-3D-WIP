@@ -79,6 +79,8 @@ class Byml:
         if self._string_table_offset != 0:
             self._string_table = self._parse_string_table(self._string_table_offset)
 
+        self.stringUpdates = []
+
     def parse(self) -> typing.Union[list, dict, None]:
         """Parse the BYML and get the root node with all children."""
         root_node_offset = self._read_u32(12)
