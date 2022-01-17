@@ -17,3 +17,5 @@ Second, run install dependencies.bat.
 ???
 
 Profit
+
+# AT THE MOMENT, YOU CAN ONLY SEE THE MAP LAYOUT AND NOTHING ELSE
