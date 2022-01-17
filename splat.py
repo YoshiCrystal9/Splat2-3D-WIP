@@ -479,7 +479,7 @@ class SettingsWidget(QtWidgets.QWidget):
         for key in obj.data:
             vnode = obj.data
             if not key in ['Scale','Translate','Rotate','UnitConfig','UnitConfigName',
-                           'ModelName', 'Team', 'Text']:
+                           'ModelName', 'Team', 'Text', 'LayerConfigName']:
                 lbl = QtWidgets.QLabel(SettingName(key)+':')
                 if isinstance(vnode, type(byml.NodeType.FLOAT.name)):
                     box = FloatEdit(obj.data[key],self.changed2)
@@ -506,7 +506,16 @@ class SettingsWidget(QtWidgets.QWidget):
                 box = LineEdit(str(obj.data['UnitConfigName']),self.configNameChanged)
                 box.node = vnode
                 box = QtWidgets.QLineEdit(str(obj.data[key]))
-                box.setEnabled(False)
+                box.setEnabled(True)
+                self.layout.addWidget(lbl)
+                self.layout.addWidget(box)
+
+            elif key == 'LayerConfigName':
+                lbl = QtWidgets.QLabel(key+':')
+                box = LineEdit(str(obj.data['LayerConfigName']),self.configNameChanged)
+                box.node = vnode
+                box = QtWidgets.QLineEdit(str(obj.data[key]))
+                box.setEnabled(True)
                 self.layout.addWidget(lbl)
                 self.layout.addWidget(box)
                 
