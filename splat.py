@@ -433,6 +433,7 @@ class SettingsWidget(QtWidgets.QWidget):
             self.layout.itemAt(i).widget().setParent(None)
 
     def showSettings(self,obj):
+        
         self.current = obj
         currentName = obj.data['UnitConfigName']
         self.config_lbl = QtWidgets.QLabel(objectName(currentName))
