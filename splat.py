@@ -184,10 +184,18 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName) + ')')    
 
                 if custom == 1:
+
+                    # no se que hice aqui lol tengo q rehacerlo en un futuro pero oye al menos funciona xd
+
                     print("coño ya", pathndos)
-                    decompressed = libyaz0.decompress(data)
-                    self.levelData = byml.Byml(sarc.sarc_extract(decompressed, 1))
-                    self.loadLevel(self.levelData.rootNode)
+                    sarc.extract(path)
+                    with open(pathndos, 'rb') as f:
+                        databyml = f.read()
+
+                        print(databyml)
+
+                    self.levelData = byml.Byml(databyml)
+                    self.loadLevel(self.levelData.parse())
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')                 
                 
     def loadLevel(self,levelData):
