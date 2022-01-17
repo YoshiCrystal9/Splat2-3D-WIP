@@ -221,21 +221,21 @@ class MainWindow(QtWidgets.QMainWindow):
             i+=1
         progress.setValue(i)
         
-##        amount2 = len(levelData['Rails']) # load the Objs subnode
-##        progress2 = QtWidgets.QProgressDialog(self)
-##        progress2.setCancelButton(None)
-##        progress2.setMinimumDuration(0)
-##        progress2.setRange(0,amount2)
-##        progress2.setWindowModality(QtCore.Qt.WindowModal)
-##        progress2.setWindowTitle('Loading...')            
-##        i2 = 0
-##        for rail in levelData['Rails']: # load the objects
-##            progress.setLabelText('Loading rail '+str(i2+1)+'/'+str(amount2)) # count, etc etc
-##            progress.setValue(i2)
-##            self.loadRail(rail)
-##            self.glWidget.updateGL()
-##            i2+=1            
-##        progress2.setValue(i2)
+        amount2 = len(levelData['Rails']) # load the Objs subnode
+        progress2 = QtWidgets.QProgressDialog(self)
+        progress2.setCancelButton(None)
+        progress2.setMinimumDuration(0)
+        progress2.setRange(0,amount2)
+        progress2.setWindowModality(QtCore.Qt.WindowModal)
+        progress2.setWindowTitle('Loading...')            
+        i2 = 0
+        for rail in levelData['Rails']: # load the objects
+            progress.setLabelText('Loading rail '+str(i2+1)+'/'+str(amount2)) # count, etc etc
+            progress.setValue(i2)
+            self.loadRail(rail)
+            self.glWidget.updateGL()
+            i2+=1
+        progress2.setValue(i2)
         
         self.saveAction.setEnabled(True)
         doneBox = QtWidgets.QMessageBox()
@@ -254,14 +254,14 @@ class MainWindow(QtWidgets.QMainWindow):
         print('Loaded object ' + objectName(regularName))     
         self.glWidget.addObject(obj,modelName)
 
-##    def loadRail(self,rail):
-##        """
-##        Loads a rail, with said rail being the argument
-##        """
-##        modelName = rail['ModelName'] if rail['ModelName'] else rail['UnitConfigName']
-##        regularName = str(rail['UnitConfigName'])
-##        print('Loaded rail ' + regularName)    
-##        self.glWidget.addRail(rail, modelName)        
+    def loadRail(self,rail):
+        """
+        Loads a rail, with said rail being the argument
+        """
+        modelName = rail['ModelName'] if rail['ModelName'] else rail['UnitConfigName']
+        regularName = str(rail['UnitConfigName'])
+        print('Loaded rail ' + regularName)    
+        self.glWidget.addRail(rail, modelName)        
 
     def openParamEditor(self):
         """
@@ -756,11 +756,11 @@ class LevelWidget(QGLWidget):
         lobj = LevelObject(obj,self.cache[modelName])
         self.objects.append(lobj)
 
-##    def addRail(self, rail, modelName):
-##        if not modelName in self.cache:
-##            self.cache[modelName] = self.loadModel(modelName)
-##        lobj = LevelObject(rail,self.cache[modelName])
-##        self.objects.append(lobj)        
+    def addRail(self, rail, modelName):
+        if not modelName in self.cache:
+            self.cache[modelName] = self.loadModel(modelName)
+        lobj = LevelObject(rail,self.cache[modelName])
+        self.objects.append(lobj)        
 
     # chain for loading models, they're seperated in the game for some reason
     def loadModel(self,newname):
