@@ -503,8 +503,8 @@ class SettingsWidget(QtWidgets.QWidget):
                 
             elif key == 'UnitConfigName':
                 lbl = QtWidgets.QLabel(key+':')
-                #box = LineEdit(str(obj.data['UnitConfigName']),self.configNameChanged)
-                #box.node = vnode
+                box = LineEdit(str(obj.data['UnitConfigName']),self.configNameChanged)
+                box.node = vnode
                 box = QtWidgets.QLineEdit(str(obj.data[key]))
                 box.setEnabled(False)
                 self.layout.addWidget(lbl)
@@ -528,7 +528,7 @@ class SettingsWidget(QtWidgets.QWidget):
                     self.team_box.setToolTip('A value of 2 means neutral, for all game modes.')  
                     self.team_box.node = vnode
                 else:
-                    self.team_box = ComboBoxEdit(obj.data['Team'])
+                    self.team_box = ComboBoxEdit(obj.data['Team'],self.changed)
                     self.team_box.setToolTip('A value of 2 means neutral, for all game modes.')      
                     self.team_box.setEnabled(True)
                 self.layout.addWidget(self.team_lbl)
