@@ -777,11 +777,7 @@ class LevelWidget(QGLWidget):
 
         name = ReplaceModel(newname, gen)
         
-        paths = ('/Model/',
-               '/Pack/Obj/Model/',
-               '/Pack/ObjSmall/Model/',
-               '/Pack/Enemy/Model/',
-               '/Pack/Player/Model/')
+        paths = ('/Model')
         
         for objpath in paths:
             base = window.gamePath + str(objpath) + str(name)
@@ -793,7 +789,7 @@ class LevelWidget(QGLWidget):
                 kind = '(skipped)'
                 continue
 
-            if base == window.gamePath + '/Pack/ObjSmall/Model/Obj_DemoPlayer':
+            if base == window.gamePath + '/Model':
                 return self.cubeList
             
             if os.path.isfile(str(base) + str(ext)):
