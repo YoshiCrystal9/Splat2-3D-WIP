@@ -620,11 +620,11 @@ class LevelObject:
         obj = self.data
         trans = obj['Translate']
         if self.posx != trans['X']/100:
-            trans('X').changeValue(self.posx*100)
+            trans.getSubNode('X').changeValue(self.posx*100)
         if self.posy != trans['Y']/100:
-            trans('Y').changeValue(self.posy*100)
+            trans.getSubNode('Y').changeValue(self.posy*100)
         if self.posz != trans['Z']/100:
-            trans('Z').changeValue(self.posz*100)
+            trans.getSubNode('Z').changeValue(self.posz*100)
             
         rot = obj['Rotate']
         if self.rotx != rot['X']:
