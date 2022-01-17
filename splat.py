@@ -169,6 +169,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 path = self.gamePath + '/Map' + levelSelect.stageName + '.szs'
                 custom = 0
 
+                print(levelSelect.stageName)
+
             if os.path.isfile(path):
                 pathndos = self.gamePath + '/Map' + '/' + name + '/' + name + '.byaml'
                 with open(path, 'rb') as f:
@@ -176,12 +178,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
                     print(data)
 
-# no tocar custom 0 de momento, usar el 1
-
                 if custom == 0:
-                    self.levelData = byml.Byml(pathndos, 'rb')
-                    self.loadLevel(self.levelData.rootNode)
-                    self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName) + ')')    
+                    sarc.extract(levelSelect.stageName + '.szs')
+                    with open(pathndos, 'rb') as f:
+                        databyml = f.read()
+
+                        print(databyml)
+
+                    self.levelData = byml.Byml(databyml)
+                    self.loadLevel(self.levelData.parse())
+                    self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')    
 
                 if custom == 1:
 
@@ -614,11 +620,11 @@ class LevelObject:
         obj = self.data
         trans = obj['Translate']
         if self.posx != trans['X']/100:
-            trans.getSubNode('X').changeValue(self.posx*100)
+            trans('X').changeValue(self.posx*100)
         if self.posy != trans['Y']/100:
-            trans.getSubNode('Y').changeValue(self.posy*100)
+            trans('Y').changeValue(self.posy*100)
         if self.posz != trans['Z']/100:
-            trans.getSubNode('Z').changeValue(self.posz*100)
+            trans('Z').changeValue(self.posz*100)
             
         rot = obj['Rotate']
         if self.rotx != rot['X']:
@@ -774,7 +780,7 @@ class LevelWidget(QGLWidget):
 
     # chain for loading models, they're seperated in the game for some reason
     def loadModel(self,newname):
-        
+        print("attempting to load model")
         if self.inkGender == 1:
             gen = 1
         else:
