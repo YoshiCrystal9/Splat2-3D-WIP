@@ -523,7 +523,7 @@ class SettingsWidget(QtWidgets.QWidget):
                 
             elif key == 'Team':
                 self.team_lbl = QtWidgets.QLabel(key+':')              
-                if isinstance(vnode,int):
+                if isinstance(vnode, type(byml.NodeType.INT.name)):
                     self.team_box = ComboBoxEdit((obj.data['Team']),self.changed)
                     self.team_box.setToolTip('A value of 2 means neutral, for all game modes.')  
                     self.team_box.node = vnode
