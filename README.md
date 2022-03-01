@@ -16,6 +16,8 @@ First, download this program.
 
 Second, run install dependencies.bat.
 
+Change python path on the .bat
+
 ???
 
 Profit
