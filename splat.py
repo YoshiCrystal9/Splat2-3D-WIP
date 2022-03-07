@@ -771,7 +771,7 @@ class LevelWidget(QGLWidget):
 
     # chain for loading models, they're seperated in the game for some reason
     def loadModel(self,newname):
-        print("attempting to load model")
+        print("Attempting to load model")
         if self.inkGender == 1:
             gen = 1
         else:
@@ -784,19 +784,23 @@ class LevelWidget(QGLWidget):
 
         name = ReplaceModel(newname, gen)
         
-        paths = ('/Model')
+        paths = ('/Model/')
+
+        print(paths)
         
         for objpath in paths:
-            base = window.gamePath + str(objpath) + str(name)
+            base = window.gamePath + str(paths) + str(name)
             if os.path.isfile(str(base) + '.sarc'):
                 ext = '.sarc'
             elif os.path.isfile(str(base) + '.szs'):
                 ext = '.szs'
             else:
                 kind = '(skipped)'
+                print(base)
                 continue
 
-            if base == window.gamePath + '/Model':
+            if base == window.gamePath + '/Model/':
+                print('achus')
                 return self.cubeList
             
             if os.path.isfile(str(base) + str(ext)):
@@ -805,9 +809,10 @@ class LevelWidget(QGLWidget):
                     print('Loading model ' + name + '!')   
                     if data.startswith(b'Yaz0'):
                         print('Decompressing Yaz0...')
-                        yaz0archive = yaz0.decompress(data)
-                        if b"Output.bfres" in yaz0archive:
-                            bfres = sarc.extract(yaz0archive, 'Output.bfres')
+                        yaz0archive = yaz0.DecompressYaz(data)
+                        #print(yaz0archive)
+                        if b"output.bfres" in yaz0archive:
+                            bfres = sarc.extract("output.bfres" in yaz0archive)
                             model = fmdl.parse(bfres)
                             return self.generateList(model)
                         else:
@@ -815,8 +820,8 @@ class LevelWidget(QGLWidget):
                     else:
                         print('Skipping yaz0 decompression')
                         sarchive = data
-                        if b"Output.bfres" in sarchive:
-                            bfres = sarc.extract(sarchive, 'Output.bfres')
+                        if b"output.bfres" in sarchive:
+                            bfres = sarc.extract(sarchive, 'output.bfres')
                             model = fmdl.parse(bfres)
                             return self.generateList(model)
                         else:
