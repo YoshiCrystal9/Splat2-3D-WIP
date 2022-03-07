@@ -148,10 +148,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.levelList = byml.Byml(data).parse()
 
         # byml.BYML(data).rootNode
-        
-    # Splatoon stores it's levels in /Pack/Map/____.szs/____.byaml so it's double layered
-    # looks like we have to double the decompression and extraction
-    # or we can just ask the user to kindly extract them??
+
     def showLevelDialog(self):
         """
         Loads the level choosing dialog, along with sending the level data to loadLevel()
@@ -178,6 +175,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     print(data)
 
                 if custom == 0:
+
                     sarc.extract(levelSelect.stageName + '.szs')
                     with open(pathndos, 'rb') as f:
                         databyml = f.read()
@@ -189,8 +187,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')    
 
                 if custom == 1:
-
-                    # no se que hice aqui lol tengo q rehacerlo en un futuro pero oye al menos funciona xd
 
                     print("coño ya", pathndos)
                     sarc.extract(path)
@@ -348,7 +344,7 @@ class MainWindow(QtWidgets.QMainWindow):
         fileMenu = menubar.addMenu("File").addActions([openAction, self.saveAction])
         toolMenu = menubar.addMenu("Tools").addActions([resetCamera, self.resetlevelAction])
         settingsMenu = menubar.addMenu("Settings").addAction(pathAction)
-        otherMenu = menubar.addMenu("Other").addActions([changeInkling, changeBGColor, changePreset])
+        #otherMenu = menubar.addMenu("Other").addActions([changeInkling, changeBGColor, changePreset])
 
     def saveLevel(self):
         """
@@ -556,8 +552,6 @@ class SettingsWidget(QtWidgets.QWidget):
                 self.layout.addWidget(box)                
 
     def changed(self,box):
-        if self.transx.text() and self.transy.text() and self.transz.text() and self.rotx.text() and self.roty.text() and self.rotz.text() and self.sclx.text() and self.scly.text() and self.sclz.text():
-            try:
                 self.current.posx = float(self.transx.text().replace(',', '.'))
                 self.current.posy = float(self.transy.text().replace(',', '.'))
                 self.current.posz = float(self.transz.text().replace(',', '.'))
@@ -569,8 +563,6 @@ class SettingsWidget(QtWidgets.QWidget):
                 self.current.sclz = float(self.sclz.text().replace(',', '.'))
                 self.current.saveValues()
                 window.glWidget.updateGL()
-            except:
-                print("Please enter a valid float")
 
     def changed2(self,box):
         if box.text():
@@ -619,27 +611,27 @@ class LevelObject:
         obj = self.data
         trans = obj['Translate']
         if self.posx != trans['X']/100:
-            trans.getSubNode('X').changeValue(self.posx*100)
+            trans['X'] = self.posx*100
         if self.posy != trans['Y']/100:
-            trans.getSubNode('Y').changeValue(self.posy*100)
+            trans['Y'] = self.posy*100
         if self.posz != trans['Z']/100:
-            trans.getSubNode('Z').changeValue(self.posz*100)
+            trans['Z'] = self.posz*100
             
         rot = obj['Rotate']
         if self.rotx != rot['X']:
-            rot.getSubNode('X').changeValue(self.rotx)
+            rot['X'] = self.rotx
         if self.roty != rot['Y']:
-            rot.getSubNode('Y').changeValue(self.roty)
+            rot['Y'] = self.roty
         if self.rotz != rot['Z']:
-            rot.getSubNode('Z').changeValue(self.rotz)
+            rot['Z'] = self.rotz
 
         scale = obj['Scale']
         if self.sclx != scale['X']:
-            scale.getSubNode('X').changeValue(self.sclx)
+            scale['X'] = self.sclx
         if self.scly != scale['Y']:
-            scale.getSubNode('Y').changeValue(self.scly)
+            scale['Y'] = self.scly
         if self.sclz != scale['Z']:
-            scale.getSubNode('Z').changeValue(self.sclz)
+            scale['Z'] = self.sclz
 
     def draw(self,pick):
         if pick:
