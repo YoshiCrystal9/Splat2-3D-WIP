@@ -75,7 +75,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
-        self.setWindowTitle("Splatoon 2 Level Editor ALPHA v0.1")
+        self.setWindowTitle("Splatoon 2 Level Editor ALPHA v1.0")
         self.setWindowIcon(QtGui.QIcon('icon.png'))
         self.setIconSize(QtCore.QSize(16, 16))        
         self.setGeometry(100,100,1080,720)
@@ -184,7 +184,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                     self.levelData = byml.Byml(databyml)
                     self.loadLevel(self.levelData.parse())
-                    self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')    
+                    self.setWindowTitle('Splatoon 2 Level Editor v1.0 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')    
 
                 if custom == 1:
 
@@ -197,7 +197,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                     self.levelData = byml.Byml(databyml)
                     self.loadLevel(self.levelData.parse())
-                    self.setWindowTitle('Splatoon 2 Level Editor v0.1 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')                 
+                    self.setWindowTitle('Splatoon 2 Level Editor v1.0 ' + os.path.basename(path) + ' (' + levelName(levelSelect.stageName[:-4]) + ')')                 
                 
     def loadLevel(self,levelData):
         """
