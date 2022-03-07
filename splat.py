@@ -32,12 +32,12 @@ if debugMode == 1:
     print('Starting in debug mode...')
 
 # taken from reggienext, for seeing if you have the right version
-minimumVer = 3.4
+minimumVer = 3.6
 import sys
 currentRunningVersion = sys.version_info.major + (.1 * sys.version_info.minor)
 if currentRunningVersion < minimumVer:
     errormsg = 'Please update your copy of Python to ' + str(minimumVer) + \
-        ' or greater. Currently running on: ' + sys.version[:5] + ' . However, there is a(n) [outdated] python 2.7 version avaliable.'
+        ' or greater. Currently running on: ' + sys.version[:5]
     raise Exception(errormsg)
 
 # PyQt5 import checker
@@ -134,7 +134,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists(folder+'/Mush'): return 0
         if not os.path.exists(folder+'/Model'): return 0
         if not os.path.exists(folder+'/Map'): return 0
-        if not os.path.exists(folder+'/Param'): return 0
         return 1
 
     # luckily Splatoon has a MapInfo.byaml to load stuff in....
