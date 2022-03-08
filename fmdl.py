@@ -157,7 +157,7 @@ class FMDL:
         vtxcount = UI16(offs + 32)
         shpcount = UI16(offs + 34)
 
-        self.parseBones(skloffs)
+        #self.parseBones(skloffs)
         self.parseVertices(vtxoffs, vtxcount)
         self.parseShapes(shpoffs, shpcount)
 
@@ -174,7 +174,7 @@ class FMDL:
     def parseVertices(self, offs, count):
         self.vertices = []
         for i in range(count):
-            vertex = FVTX()
+            vertex = FMDL()
             vertex.parse(offs + i * 32)
             self.vertices.append(vertex)
 

@@ -63,7 +63,6 @@ except (AttributeError):
 import os, random
 from names import description, levelName, objectName, SettingName, ReplaceModel
 import byml, fmdl, inkling, preseteditor, sarc, yaz0, libyaz0
-
 import datetime
 now = datetime.datetime.now
 
@@ -804,19 +803,41 @@ class LevelWidget(QGLWidget):
                 return self.cubeList
             
             if os.path.isfile(str(base) + str(ext)):
+
                 with open(base + ext, 'rb') as f:
+
                     data = f.read()
                     print('Loading model ' + name + '!')   
                     if data.startswith(b'Yaz0'):
+
                         print('Decompressing Yaz0...')
+
                         yaz0archive = yaz0.DecompressYaz(data)
-                        #print(yaz0archive)
+
+                        print(base + ext + ' a llorar crack')
+
                         if b"output.bfres" in yaz0archive:
-                            bfres = sarc.extract(b"output.bfres" in yaz0archive)
-                            model = fmdl.parse(bfres)
+
+                            print('Decompressing bfres...')
+
+                            bfres = sarc.extract(base + ext)
+
+                            print(base + ext.replace(".szs","") + '/' + 'output.bfres')
+
+                            ajolotexd = base + ext.replace(".szs","") + '/' + 'output.bfres'
+
+                            with open(ajolotexd, 'rb') as f:
+
+                                databfres = f.read()
+
+                            model = fmdl.parse(databfres)
+
                             return self.generateList(model)
+
                         else:
+
                             return self.cubeList   
+
                     else:
                         print('Skipping yaz0 decompression')
                         sarchive = data
