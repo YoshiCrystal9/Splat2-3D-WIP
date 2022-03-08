@@ -62,7 +62,7 @@ except (AttributeError):
 
 import os, random
 from names import description, levelName, objectName, SettingName, ReplaceModel
-import byml, fmdl, inkling, preseteditor, sarc, yaz0, libyaz0
+import byml, fmdl, inkling, preseteditor, sarc, yaz0, libyaz0, bfres
 import datetime
 now = datetime.datetime.now
 
