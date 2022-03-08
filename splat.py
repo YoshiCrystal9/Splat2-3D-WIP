@@ -830,7 +830,7 @@ class LevelWidget(QGLWidget):
 
                                 databfres = f.read()
 
-                            model = fmdl.parse(databfres)
+                            model = bfres.resfile(databfres)
 
                             return self.generateList(model)
 
