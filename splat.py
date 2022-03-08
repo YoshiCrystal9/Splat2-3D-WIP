@@ -812,7 +812,7 @@ class LevelWidget(QGLWidget):
                         yaz0archive = yaz0.DecompressYaz(data)
                         #print(yaz0archive)
                         if b"output.bfres" in yaz0archive:
-                            bfres = sarc.extract("output.bfres" in yaz0archive)
+                            bfres = sarc.extract(b"output.bfres" in yaz0archive)
                             model = fmdl.parse(bfres)
                             return self.generateList(model)
                         else:
