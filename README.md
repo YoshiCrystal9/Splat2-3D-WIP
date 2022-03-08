@@ -1,13 +1,7 @@
-# Splatoon 2 Level Editor
+# Splat2-3D-WIP
 A small Splatoon 2 Map editor, based off of Kinnay, MrRean and RoadrunnerWMC's Splat3D editor.
 
-To use this editor, you need PyQt5, and PyOpenGL. These need to be ran on an installation of Python 3.4 or higher.
-
-# TO DO
-
-Make object models to load.
-
-Fix saving byaml.
+To use this editor, install the dependencies from install dependencies.bat. These need to be ran on an installation of Python 3.6 or higher.
 
 # How to use
 First, download this program. 
